@@ -1,3 +1,8 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+
 :root{
     font-family: "Alice", serif;
     line-height: 150%;
@@ -18,13 +23,35 @@ body{
 
 
 }
+main{
+    padding: 24px;
+
+}
+
+section + section{
+
+    margin-top: 24px;
+
+}
+
+#about p + p{
+margin-top: 12px;
+}
 h1{
     line-style: 140%;
     font-size: 40px;
+    margin-bottom: 4px;
+
 }
 h2{
     font-size: 24px;
     }
     h1,h2 {
-        color: #291b1a
+        color: #291b1a;
+        margin-bottom: 4px;
+        line-height: 150%;
+
+    }
+    ul{
+        padding-left: 24px;
     }
