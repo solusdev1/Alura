@@ -26,12 +26,27 @@ body{
 main{
     padding: 24px;
     
+nav {
+    text-align: right;
+    
+}
+#Home h3 {
+    color: #000; /* mantém o título do Home em preto */
+}
+    h2{
+        font-size: 24px;
+        }
+     
+
+    h2{
+        font-size: 22px;
+        }
 
 }
 section + section{
 
     margin-top: 24px;
-
+    
 }
 
 #about hr {
@@ -86,14 +101,7 @@ img{
         color:#E1624F;
         font-size: 16px;
     }
-    h2{
-        font-size: 24px;
-        }
-     
 
-    h2{
-        font-size: 22px;
-        }
  #destinos p{
             margin-top: 15px;
             font-weight: normal;
@@ -182,6 +190,6 @@ img{
             font-size: 16px;
             color:#1E1E1E;
             text-align: center;
-            padding-bottom: 48px;
+            padding-bottom: 40px;
         }
        
