@@ -1,14 +1,30 @@
+import {parseRouthPath} from "./util/parseRouthPath.js"
 export const routes = [
     {
-        method: "",
-        Path: "", 
-        controller: (request,  response) => {}
+        method: "GET",
+        Path: "/products", 
+        controller: (request,  response) => {
+            return response.end("lista de produtos")
+        },
 
     },
     {
 
-        method: "",
-        Path: "", 
-        controller: (request,  response) => {}
+        method: "POST",
+        Path: "/products", 
+        controller: (request,  response) => {
+            return response.writeHead(201).end(JSON.stringify(request.body))
+        },
     },
-]
+        {
+
+        method: "DELETE",
+        Path: "/products/:id", 
+        controller: (request,  response) => {
+            return response.writeHead(201).end("Produto deletado com sucesso")
+        },
+    }
+].map(route => {
+    ...route,
+    Path: parseRouthPath(route.Path),
+})
