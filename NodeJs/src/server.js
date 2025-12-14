@@ -7,16 +7,24 @@ import http from "node:http"
 // "const" declara uma variável que não pode ser mudada depois
 // "http.createServer" é uma função que cria o servidor
 // O parâmetro é uma função anônima (arrow function) que será chamada para cada pedido
+const users = []
 const server = http.createServer((request, response) => {
     // Passo 3: Pegar informações do pedido
     // "const" novamente declara variável constante
     // "{ method, url }" é desestruturação: pega essas propriedades do objeto request
     const { method, url } = request
     if (method === "GET" && url === "/users") {
-  return response.end("Listar usuários")
+  return response.end(JSON.stringify(users))
+  
 }
 
 if (method === "POST" && url === "/users") {
+  users.push({
+    id: 1,
+    name: "João",
+    email: "j@j.com",
+  })
+  
   return response.end("Criar um usuário")
 }
 
@@ -41,14 +49,14 @@ const PORT = 3333
 // Passo 7: Ligar o servidor na porta escolhida
 // "server.listen" é um método (função) do objeto server
 // Recebe a porta e uma função callback que roda quando estiver pronto
-server.listen(PORT, () => {
-    // Dentro da callback, usamos template literal novamente para mostrar a porta
-    console.log(`🎉 Servidor funcionando! Acesse http://localhost:${PORT}`)
+server.listen(3333, "127.0.0.1", () => {
+  console.log("SERVIDOR ATIVO NA 3333")
 })
-    // 👇 ISSO EVITA O ERRO AO SALVAR
-process.on("SIGTERM", () => {
-  server.close(() => {
-    console.log("Servidor encerrado corretamente")
-    process.exit(0)
-  })
+
+// evita o processo morrer
+setInterval(() => {}, 1000)
+
+process.on("SIGINT", () => {
+  console.log("Processo morreu")
+  process.exit()
 })
