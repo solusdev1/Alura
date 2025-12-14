@@ -13,6 +13,7 @@ const server = http.createServer(async(request, response) => {
   // Se nenhuma das opções acima for verdadeira, significa que a URL não existe, então respondemos com erro 404 (não encontrado).
   // É importante sempre responder algo, senão o usuário fica esperando para sempre.
   
+  
 })
 
 // Definimos em qual porta o servidor vai "escutar" as requisições. Porta 3333 é como um canal de comunicação.
