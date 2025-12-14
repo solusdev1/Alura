@@ -1,4 +1,4 @@
-import {parseRouthPath} from "./util/parseRouthPath.js"
+import { parseRouthPath } from "./util/parseRouthPath" from "./util/parseRouthPath.js"
 export const routes = [
     {
         method: "GET",
@@ -24,7 +24,7 @@ export const routes = [
             return response.writeHead(201).end("Produto deletado com sucesso")
         },
     }
-].map(route => {
+].map((route) => ({
     ...route,
     Path: parseRouthPath(route.Path),
-})
+}))
