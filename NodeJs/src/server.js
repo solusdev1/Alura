@@ -13,9 +13,11 @@ const server = http.createServer((request, response) => {
     // "const" novamente declara variável constante
     // "{ method, url }" é desestruturação: pega essas propriedades do objeto request
     const { method, url } = request
+    console.log(request.headers)
     if (method === "GET" && url === "/users") {
-  return response.end(JSON.stringify(users))
-  
+  return response.setHeader("Content-Type", "application/json")
+  .end(JSON.stringify(users, null, 2))
+
 }
 
 if (method === "POST" && url === "/users") {
@@ -25,7 +27,9 @@ if (method === "POST" && url === "/users") {
     email: "j@j.com",
   })
   
-  return response.end("Criar um usuário")
+  response.writeHead(200, { 'Content-Type': 'text/plain' })
+  response.end("Criar um usuário")
+  return
 }
 
     // Passo 4: Mostrar no console o que recebemos (para testar)
