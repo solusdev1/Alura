@@ -29,7 +29,7 @@ function getCities(event){
 
     // Pega o valor do estado selecionado (ID do estado)
     const ufValue = event.target.value
-    // Pega o índice da opção selecionada
+    // Pega o índice da opção de estado selecionada
     const indexOfSelectedState = event.target.selectedIndex
     // Define o valor do input hidden como o texto da opção selecionada (nome do estado)
     stateInput.value = event.target.options[indexOfSelectedState].text
