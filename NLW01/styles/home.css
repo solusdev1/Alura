@@ -1,101 +1,115 @@
-#page-home {
-    height: 100vh;
+/* CSS específico para a página home */
 
-    background: url('../assets/home-background.svg');  
-    background-repeat: no-repeat;
-    background-position: 35vw bottom;
+/* Estilo para a div principal da página home */
+#page-home {
+    height: 100vh; /* Altura total da tela */
+
+    background: url('../assets/home-background.svg');  /* Imagem de fundo */
+    background-repeat: no-repeat; /* Não repetir a imagem */
+    background-position: 35vw bottom; /* Posição da imagem */
    
 }
 
+/* Estilo para o conteúdo dentro de #page-home */
 #page-home.content{
-    display:flex;
-    flex-direction: column;
-    height: 100%;
-    width: 90%;
-    max-width: 1100px;
-    margin: 0 auto;
+    display:flex; /* Usa flexbox para layout */
+    flex-direction: column; /* Itens em coluna */
+    height: 100%; /* Altura total */
+    width: 90%; /* Largura 90% */
+    max-width: 1100px; /* Máximo 1100px */
+    margin: 0 auto; /* Centraliza horizontalmente */
 }
+/* Estilo para o header da página home */
 #page-home header{
-    margin-top: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    margin-top: 48px; /* Margem superior */
+    display: flex; /* Flexbox */
+    align-items: center; /* Alinha itens no centro vertical */
+    justify-content: space-between; /* Espaço entre itens */
 }
+/* Estilo para o link no header */
 #page-home header a {
-    display:flex;
-    flex-direction: row-reverse;
-    align-items: center;
-    color:var(--title-color);
-    font-weight: bold;
+    display:flex; /* Flexbox */
+    flex-direction: row-reverse; /* Ordem reversa (ícone depois do texto) */
+    align-items: center; /* Centro vertical */
+    color:var(--title-color); /* Cor do texto */
+    font-weight: bold; /* Negrito */
     
 }
+/* Estilo para o span dentro do link (ícone) */
 #page-home header a span{
-    display: flex;
-    margin-right: 16px;
+    display: flex; /* Flexbox */
+    margin-right: 16px; /* Margem direita */
 
-
-    background-image: url(../assets/log-in.svg);
-    width: 20px;
-     height: 20px;
+    background-image: url(../assets/log-in.svg); /* Ícone como fundo */
+    width: 20px; /* Largura */
+     height: 20px; /* Altura */
     
 }
+/* Estilo para o main da página home */
 #page-home main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    max-width: 560px;
-    height: 100vh;
+    flex: 1; /* Ocupa espaço restante */
+    display: flex; /* Flexbox */
+    flex-direction: column; /* Coluna */
+    justify-content: center; /* Centro vertical */
+    max-width: 560px; /* Máximo 560px */
+    height: 100vh; /* Altura total da tela */
 }
     
+/* Estilo para o h1 dentro do main */
 #page-home main h1 {
   
-    font-size: 54px;
-    font-weight: 900;
-    line-height: 54px;
+    font-size: 54px; /* Tamanho da fonte */
+    font-weight: 900; /* Peso da fonte (extra negrito) */
+    line-height: 54px; /* Altura da linha */
 }
+/* Estilo para o parágrafo dentro do main */
 #page-home main p {
-    margin-top: 24px;
-    font-size: 24px;
-    line-height: 38px;
+    margin-top: 24px; /* Margem superior */
+    font-size: 24px; /* Tamanho da fonte */
+    line-height: 38px; /* Altura da linha */
 }
+/* Estilo para o link dentro do main */
 #page-home main a {
-    margin-top: 40px;
-    width: 100%;
-    max-width: 360px;
-    height: 60px;
-    background: var(--primary-color);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    text-decoration: none;
-    transition: 400ms;
-    font-weight: bold;
-    color: white;
+    margin-top: 40px; /* Margem superior */
+    width: 100%; /* Largura total */
+    max-width: 360px; /* Máximo 360px */
+    height: 60px; /* Altura */
+    background: var(--primary-color); /* Fundo verde */
+    border-radius: 8px; /* Bordas arredondadas */
+    display: flex; /* Flexbox */
+    align-items: center; /* Centro vertical */
+    overflow: hidden; /* Esconde overflow */
+    text-decoration: none; /* Sem sublinhado */
+    transition: 400ms; /* Transição suave */
+    font-weight: bold; /* Negrito */
+    color: white; /* Cor do texto */
 }
+/* Estilo ao passar o mouse no link */
 #page-home main a:hover {
-    background: #2fb86e;
+    background: #2fb86e; /* Fundo mais escuro no hover */
 }
+/* Estilo para o span dentro do link (ícone) */
 #page-home main a span {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 72px;
-    height: 72px;
-    background: rgba(0, 0, 0, 0.08);
-    transition: background-color 400ms;
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
+    display: flex; /* Flexbox */
+    justify-content: center; /* Centro horizontal */
+    align-items: center; /* Centro vertical */
+    width: 72px; /* Largura */
+    height: 72px; /* Altura */
+    background: rgba(0, 0, 0, 0.08); /* Fundo semi-transparente */
+    transition: background-color 400ms; /* Transição */
+    border-top-left-radius: 8px; /* Canto arredondado */
+    border-bottom-left-radius: 8px; /* Canto arredondado */
 }
+/* Pseudo-elemento ::after para adicionar ícone */
 #page-home main a span::after {
-    content: "";
-    background: url('../assets/search.svg');
-    width: 24px;
-    height: 24px;
+    content: ""; /* Conteúdo vazio */
+    background: url('../assets/search.svg'); /* Ícone de busca */
+    width: 24px; /* Largura */
+    height: 24px; /* Altura */
 }
+/* Hover no span */
 #page-home main a span:hover {
-    background: #2fb86e;
+    background: #2fb86e; /* Fundo no hover */
 }
 #page-home main a strong {
     flex: 1;

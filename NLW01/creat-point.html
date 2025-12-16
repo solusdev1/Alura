@@ -1,77 +1,81 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crar um ponto de Coleta</title>
-    <font-face>
+<!-- Página HTML para criar um ponto de coleta. HTML estrutura a página com tags. -->
+<!DOCTYPE html> <!-- Declara HTML5 -->
+<html lang="pt-BR"> <!-- Idioma português -->
+  <head> <!-- Metadados -->
+    <meta charset="UTF-8" /> <!-- Codificação UTF-8 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- Responsivo -->
+    <title>Crar um ponto de Coleta</title> <!-- Título da página -->
+    <font-face> <!-- Incorreto, deveria ser link -->
       <link
         href="https://fonts.googleapis.com/css2?family=Roboto&ubuntu:wght@400;700&display=swap"
         rel="stylesheet"
-      />
+      /> <!-- Carrega fontes -->
     </font-face>
-    <link rel="stylesheet" href="/Projeto-Novo/NLW01/styles/style.css" />
-    <link rel="stylesheet" href="/Projeto-Novo/NLW01/styles/create-point.css" />  
-    <link rel="stylesheet" href="/Projeto-Novo/NLW01/styles/responsive.css" />
+    <link rel="stylesheet" href="/Projeto-Novo/NLW01/styles/style.css" /> <!-- CSS geral -->
+    <link rel="stylesheet" href="/Projeto-Novo/NLW01/styles/create-point.css" />  <!-- CSS específico -->
+    <link rel="stylesheet" href="/Projeto-Novo/NLW01/styles/responsive.css" /> <!-- CSS responsivo -->
   </head>
-  <body>
-    <div id="page-create-point">
+  <body> <!-- Corpo da página -->
+    <div id="page-create-point"> <!-- Container principal -->
       
-        <header>
-          <img src="assets/logo.svg" alt="Logomarcara Ecoleta" />
-          <a href="#"> Voltar Para Home
-            <span></span>
+        <header> <!-- Cabeçalho -->
+          <img src="assets/logo.svg" alt="Logomarcara Ecoleta" /> <!-- Logo -->
+          <a href="#"> Voltar Para Home <!-- Link para voltar -->
+            <span></span> <!-- Ícone -->
           </a>
         </header>
-        <form action="">
-            <h1>Cadastro do ponto de coleta</h1>
-            <fieldset>
-                <legend>
-                    <h2>Dados da Entidade</h2>
+        <form action=""> <!-- Formulário para cadastro -->
+            <h1>Cadastro do ponto de coleta</h1> <!-- Título -->
+            <fieldset> <!-- Grupo de campos -->
+                <legend> <!-- Legenda do grupo -->
+                    <h2>Dados da Entidade</h2> <!-- Subtítulo -->
                 </legend>
-                <div class="field">
-                    <label for="name">Nome da Entidade</label>
-                    <input type="text" name="name"> 
+                <div class="field"> <!-- Campo individual -->
+                    <label for="name">Nome da Entidade</label> <!-- Rótulo para o input -->
+                    <input type="text" name="name"> <!-- Input de texto para nome -->
                 </div>
-                <div class="field-group">
+                <div class="field-group"> <!-- Grupo de campos lado a lado -->
                     <div class="field">
                         <label for="address">Endereço</label>
-                        <input type="text" name = "address">
+                        <input type="text" name = "address"> <!-- Input para endereço -->
                     </div>
                     <div class="field">
                         <label for="address2">Número / Complemento</label>
-                        <input type="text" name = "address2">
+                        <input type="text" name = "address2"> <!-- Input para número/complemento -->
 
                     </div>
                 </div>
                 <div class="field-group">
                     <div class="field">
-                        <label for="state">Estado</label>
-                        <select name="uf" >
-                            <option value="">Selecione o Estado</option>
+                        <label for="state">Estado</label> <!-- Rótulo para select de estado -->
+                        <select name="uf" > <!-- Select para escolher estado -->
+                            <option value="">Selecione o Estado</option> <!-- Opção padrão -->
                         </select>
+                       <input type ="hidden" name = "state" value = ""> <!-- Input oculto para armazenar nome do estado -->
+
                     </div>
                     <div class="field">
-                        <label for="text">Cidade</label>
-                        <select name="city" disabled>
-                            <option value="">Selecione a Cidade</option>
+                        <label for="text">Cidade</label> <!-- Rótulo para select de cidade -->
+                        <select name="city" disabled> <!-- Select desabilitado inicialmente -->
+                            <option value="">Selecione a Cidade</option> <!-- Opção padrão -->
                         </select>
                         
                     </div>
                     
                 </div>
-                </fieldset>
-                 <button type="submit">Cadastrar ponto de coleta</button>
-            <fieldset>
+                </fieldset> <!-- Fecha o fieldset -->
+                 <button type="submit">Cadastrar ponto de coleta</button> <!-- Botão para enviar o formulário -->
+            <fieldset> <!-- Outro grupo de campos -->
                     <legend>
-                        <h2>Itens da coleta</h2>
+                        <h2>Itens da coleta</h2> <!-- Subtítulo para itens -->
                     </legend>
                     
             </fieldset>
            
-        </form>
+        </form> <!-- Fecha o formulário -->
         
      
     </div>
+    <script src="./scripts/creat.point.js"></script> <!-- Vincula o arquivo JavaScript -->
   </body>
 </html>
