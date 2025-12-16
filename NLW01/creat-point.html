@@ -64,14 +64,52 @@
                     
                 </div>
                 </fieldset> <!-- Fecha o fieldset -->
-                 <button type="submit">Cadastrar ponto de coleta</button> <!-- Botão para enviar o formulário -->
+                
+
             <fieldset> <!-- Outro grupo de campos -->
-                    <legend>
+                    <legend class = "legend-items">
                         <h2>Itens da coleta</h2> <!-- Subtítulo para itens -->
+                        <p class="item">Selecione um ou mais ítens abaixo</p>
                     </legend>
                     
+                    
+                    <div class="items-grid">
+                       <!-- Grid de itens -->
+                                               
+                        <li id = "1"> <!-- Item 1 -->
+                            <img src="assets/baterias.svg" alt="Baterias">
+                            <span>Baterias</span>
+                        </li>
+                        <li > <!-- Item 2 -->
+                            <img src="assets/papeis-papelao.svg" alt="Papeis e Papelao">
+                            <span>Papeis e Papelao</span>
+                        </li>
+                        <li > <!-- Item 3 -->
+                            <img src="assets/eletronicos.svg" alt="Eletronicos">
+                            <span>Eletronicos</span>
+                        </li>
+                        <li data-id="4"> <!-- Item 4 -->
+                            <img src="assets/organicos.svg" alt="Organicos">
+                            <span>Organicos</span>
+                        </li>
+                        <li data-id="5"> <!-- Item 5 -->
+                            <img src="assets/oleo.svg" alt="Oleo">
+                            <span>Oleo</span>
+                        </li>
+                            <li data-id="6">
+                              <img src="./assets/lampadas.svg" alt="Lampadas">
+                              <span>Lampadas</span>
+                            </li>
+                           
+                           
+                        </li>
+                       </div>
+                       
             </fieldset>
+
+            <button type="submit">Cadastrar ponto de coleta</button> <!-- Botão para enviar o formulário -->
            
+
         </form> <!-- Fecha o formulário -->
         
      

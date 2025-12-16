@@ -11,6 +11,7 @@ function populateUFs(){
     .then( (res) => { return res.json() } ) // Converte a resposta para JSON
     .then( states => { // Recebe a lista de estados
         // Para cada estado na lista, adiciona uma opção no select
+        states.sort((a, b) => a.nome.localeCompare(b.nome))
         for(const state of states){
             ufSelect.innerHTML += `<option value="${state.id}">${state.nome}</option>`
         }
