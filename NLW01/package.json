@@ -4,25 +4,17 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
-<<<<<<< HEAD
     "dev": "nodemon src/server.js"
-=======
-    "start": "nodemon src/server.js"
->>>>>>> 0ffc515669cb15ffa2a1526c46c7503389bb9424
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-<<<<<<< HEAD
     "express": "^5.2.1",
     "nunjucks": "^3.2.4",
     "sql": "^0.78.0",
     "sqlite3": "^5.1.7"
-=======
-    "express": "^5.2.1"
->>>>>>> 0ffc515669cb15ffa2a1526c46c7503389bb9424
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
