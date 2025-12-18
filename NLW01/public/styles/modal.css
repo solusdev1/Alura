@@ -1,0 +1,9 @@
+#modal {
+    height: 100vh;
+    width: 100vw;
+    background-color: #0E0A14ef;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: 400ms;
+}
