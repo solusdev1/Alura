@@ -46,10 +46,18 @@ db.serialize(() => {
     
 
   }
+<<<<<<< HEAD
 
   //executa a query
   //db.run(query,values,afterInsertData) //db.run é uma função que executa a query e retorna o resultado  
   //fecha o banco de dados
  //db.close é uma função que fecha o banco de dados
 
+=======
+  //executa a query
+  db.run(query,values,afterInsertData) //db.run é uma função que executa a query e retorna o resultado  
+  //fecha o banco de dados
+ //db.close é uma função que fecha o banco de dados
+          
+>>>>>>> 0ffc515669cb15ffa2a1526c46c7503389bb9424
 })

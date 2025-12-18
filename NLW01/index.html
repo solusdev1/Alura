@@ -13,9 +13,33 @@
     </font-face>
     <link rel="stylesheet" href="./styles/style.css" /> <!-- Vincula o arquivo CSS principal -->
     <link rel="stylesheet" href="./styles/home.css" /> <!-- Vincula CSS específico da página home -->
+    <link rel="stylesheet" href="./styles/modal.css" /> <!-- Vincula CSS específico da página modal -->
     <link rel="stylesheet" href="./styles/responsive.css" /> <!-- Vincula CSS para responsividade -->
   </head>
-  <body> <!-- Corpo da página, onde o conteúdo visível fica -->
+  <body>
+    
+    <div id="page-home">
+    </div>
+
+      <div id ="modal">
+        <div class="content">
+           <div class="header">
+           <h1>Pontos De Coleta</h1>
+           <a href="">Fechar</a>
+           </div>
+           <form action="">
+            <label for ="search">Cidade </label>
+            <div class="search field">
+              <input type="text" name="search">
+              <button>
+                <img src="./assets/search.svg" alt="Buscar">
+
+              </button>
+              </div>
+            </form>
+            </div>
+            </div>
+    <!-- Corpo da página, onde o conteúdo visível fica -->
     <div id="page-home"> <!-- Div principal da página home, com ID para estilização -->
       <div class="content"> <!-- Container para o conteúdo -->
         <header> <!-- Cabeçalho da página -->

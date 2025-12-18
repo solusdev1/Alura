@@ -184,9 +184,7 @@ form .items-grid li {
     cursor: pointer;
     transition: border-color 400ms;
 }
-form.items-grid li:hover{
-    border-color: #34CB79;
-}
+
 form .items-grid li span {
     margin-top: 10px;
     flex: 1;
@@ -225,4 +223,12 @@ form button {
 form button:hover {
     background-color: #2fb86e;
     
+}
+.items-grid li img,
+.items-grid li span {
+    pointer-events: none;
+}
+form .items-grid li.selected {
+    background: #34cb7950;
+    border: 2px solid #34cb79;
 }

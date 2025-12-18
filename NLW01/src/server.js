@@ -2,8 +2,12 @@ const express = require("express")
 const server = express() //criando o servidor
 server.use(express.static("public")) //usando o express para servir arquivos estáticos
 server.listen(3333, () => { //escutando a porta 3333
+<<<<<<< HEAD
 console.log("Servidor está iniciando...")
 console.log(`🚀🔥 Servidor está rodando na porta ${3333}`)
+=======
+console.log(`Servidor rodando na porta ${3333}`)
+>>>>>>> 0ffc515669cb15ffa2a1526c46c7503389bb9424
 })
 //
 
