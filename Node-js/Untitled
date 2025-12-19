@@ -1,0 +1,1 @@
+uma let dentro de um if, nao é acessível fora do if ao contrario de uma var que é acessível fora do if
