@@ -1,4 +1,4 @@
-const estudanteReprovou = (notafinal,faltas) => { 
+/*const estudanteReprovou = (notafinal,faltas) => { 
   if (notafinal < 7 && faltas > 4) { //faz um if para verificar se a nota final é menor que 7 e as faltas são maiores que 4
     return true
   } else { //se não
@@ -37,4 +37,9 @@ const calculadoraSimples = (a, b, operacao) => {
     } else {
         return 'Operação não reconhecida';
     }
-};
+};*/
+
+const saudacao = (nome) => {
+console.log(`Olá, ${nome}! Seja bem-vindo(a).`);
+}
+saudacao("Carlos"); // Olá, Carlos! Seja bem-vindo(a).

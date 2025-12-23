@@ -1,6 +1,6 @@
 // parametros/argumentos
 //retornos
-
+/*
 function exibeInfosEstudante (nome,nota) { // nome é o parametro
   return (`O nome do estudante é ${nome} e a nota é ${nota}`);
 }
@@ -26,3 +26,14 @@ function dividir(dividendo, divisor) { // declaração da função
 const resultado = dividir(10, 2);
 console.log(`o resultado é ${resultado}`); // o resultado é 5
 
+*/
+
+function saudacao(nome) { //nome é o parametro da função
+  return `Olá, ${nome}! Seja bem-vindo(a).`;
+}
+console.log(saudacao("Maria")); // Olá, Maria! Seja bem-vindo(a).
+
+function calcularDobro(numero) {
+  return numero * 2;
+}
+console.log(calcularDobro(5)); // 10
