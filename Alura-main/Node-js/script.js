@@ -1,3 +1,6 @@
+idade  = 34
+console.log(idade)
+
 /*const estudante = 'Carolina';
 let professora = 'Ana';
 
