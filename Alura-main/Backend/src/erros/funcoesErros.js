@@ -1,9 +1,8 @@
-function trataErros(erro) {
+import chalk from 'chalk';
+export default function trataErros(erro) {
   if (erro.code === 'ENOENT') {
-    throw new Error('Arquivo não encontrado');
+    console.error(chalk.red('❌ Arquivo não encontrado'), erro.path);
   } else {
-    return 'Erro na aplicação';
+    console.error(chalk.red('❌ Erro na aplicação:'), erro.message);
   }
 }
-
-module.exports = trataErros;
