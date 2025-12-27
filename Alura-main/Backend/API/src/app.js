@@ -1,43 +1,43 @@
 import express from 'express';
+import connectDatabase from './config/dbconnect.js';
+import livro from './models/Livro.js';
+
+const conexao = await connectDatabase();
 
 const app = express();
 app.use(express.json());
 
-const livros = [
-  {id: 1, titulo: 'O Senhor dos Anéis', autor: 'J.R.R. Tolkien'},
-  {id: 2, titulo: 'O Hobbit', autor: 'J.R.R. Tolkien'},
-]
-
-function buscarLivro(id) {
-  return livros.findIndex((livro) => livro.id === Number(id));
-}
 app.get('/', (req, res) => {
   res.status(200).send('Curso de Node.js');
-
 });
 
-app.get('/livros', (req, res) => {
+app.get('/livros', async (req, res) => {
+  const livros = await livro.find();
+  console.log("LIVROS DO BANCO:", livros);
   res.status(200).json(livros);
 });
 
-app.get('/livros/:id', (req, res) => {
-  const index = buscarLivro(req.params.id);
-  res.status(200).json(livros[index]);
+// app.get('/livros', async (req, res) => {
+//   const listaLivros = await livro.find();
+//   res.status(200).json(listaLivros);
+// });
+
+app.post('/livros', async (req, res) => {
+  const novoLivro = await livro.create(req.body);
+  res.status(201).json(novoLivro);
 });
 
-app.post('/livros', (req, res) => {
-  livros.push(req.body);
-  res.status(201).send('Livro criado com sucesso');
+app.put('/livros/:id', async (req, res) => {
+  const livroAtualizado = await livro.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true }
+  );
+  res.status(200).json(livroAtualizado);
 });
-app.put('/livros/:id', (req, res) => {
-  const index = buscarLivro(req.params.id);
-  livros[index].titulo = req.body.titulo;
-  livros[index].autor = req.body.autor;
-  res.status(200).json(livros[index]);
-});
-app.delete('/livros/:id', (req, res) => {
-  const index = buscarLivro(req.params.id);
-  livros.splice(index, 1);
+
+app.delete('/livros/:id', async (req, res) => {
+  await livro.findByIdAndDelete(req.params.id);
   res.status(200).send('Livro deletado com sucesso');
 });
 
