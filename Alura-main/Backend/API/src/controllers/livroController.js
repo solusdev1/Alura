@@ -1,4 +1,5 @@
 import livro from '../models/Livro.js';
+import { autor } from '../models/Autor.js';
 class LivroController {
   static async listarLivros(req, res) {
     try {
@@ -33,8 +34,11 @@ class LivroController {
     }
   }
   static async cadastrarLivro(req, res) {
+    const novoLivro = req.body;
     try {
-      const novoLivro = await livro.create(req.body);
+      const autorEncontrado = await autor.findById(novoLivro.autor);
+      const livroCompleto  ={...novoLivro, autor : {...autorEncontrado._doc}};
+      const livroCriado = await livro.create(livroCompleto);
       console.log("LIVRO CADASTRADO:", novoLivro);
       res.status(201).json({message: 'Livro cadastrado com sucesso', livro: novoLivro});
     } catch (error) {
@@ -51,6 +55,17 @@ class LivroController {
     } catch (error) {
       console.log("ERRO AO EXCLUIR LIVRO:", error.message);
       res.status(500).json({message: `Erro ao excluir livro: ${error.message}`});
+    }
+  }
+  static async listarLivrosPorEditora(req, res) {
+    const editora = req.query.editora;
+    try {
+      const livrosPorEditora = await livro.find({editora: editora});
+      console.log("LIVROS POR EDITORA:", livrosPorEditora);
+      res.status(200).json(livrosPorEditora);
+    } catch (error) {
+      console.log("ERRO AO LISTAR LIVROS POR EDITORA:", error.message);
+      res.status(500).json({message: `Erro ao listar livros por editora: ${error.message}`});
     }
   }
 
