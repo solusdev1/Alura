@@ -2,47 +2,74 @@ import styled from "styled-components";
 import React from 'react';
 import {livros} from '../../componentes/Pesquisa/dadospesquisa';
 
-const Container  = styled.div`
- 
-  display: flex; 
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background-color: #fff;
-  width: 100%;
-  height: 100%;
+
+
+const Container = styled.section`
+  display: grid;
+  /* Cria uma grade responsiva: colunas de no mínimo 200px. 
+     O auto-fill garante que eles fiquem um ao lado do outro. */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+`;
+
+const LivroCard = styled.div `
+  background-color: #FFF;
   border-radius: 10px;
-  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
-  margin: 20px;
-  border: 1px solid #000;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
   cursor: pointer;
-  text-decoration: none; 
-  color: inherit; 
 
   &:hover {
-    background-color: #f0f0f0;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  img {
+    width: 100%;
+    max-width: 150px; /* Mantém as capas dos livros com tamanho padrão */
+    height: 200px;
+    object-fit: cover;
+    border-radius: 5px;
+  }
+
+  h2 {
+    font-size: 18px;
+    margin: 10px 0;
+    color: #333;
+  }
+
+  p {
+    font-size: 14px;
+    color: #666;
   }
 `;
 
+
+
 const listaLivros = livros;
-console.log(listaLivros);
+
 
 
 function LivrosContainer() {
   return (
     <Container>
-     {listaLivros.map(livro => (
-      <div key={livro.id}>
-        <h2>{livro.titulo}</h2>
-        <p>{livro.autor}</p>
-        <p>{livro.preco}</p>
-        <img src={livro.src} alt={livro.titulo} />
-      </div>
-     ))}
-      <h1>Livros</h1>
+      {listaLivros.map(livro => (
+        <LivroCard key={livro.id}>
+          <img src={livro.src} alt={livro.titulo} />
+          <h2>{livro.titulo}</h2>
+          <p>{livro.autor}</p>
+          <p><strong>{livro.preco}</strong></p>
+        </LivroCard>
+      ))}
     </Container>
   );
 }
+
+
 
 export default LivrosContainer;

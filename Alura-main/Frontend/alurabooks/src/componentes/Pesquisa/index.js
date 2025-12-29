@@ -13,6 +13,7 @@ const PesquisaContainer = styled.section`
         padding: 80px 0;
         width: 100%;
         min-height: calc(100vh - 80px);
+         background-image: linear-gradient(90deg, #002F52 35%, #326589);
 `
 
 const Titulo = styled.h2`
@@ -44,11 +45,24 @@ const ResultadoContainer = styled.div`
 
 const LivroCard = styled.div`
      
-       display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-    cursor: pointer;
+       display: grid;
+       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+       gap: 10px;
+       justify-content: center;
+       align-items: center;
+       margin-bottom: 20px;
+       cursor: pointer;
+       border: 1px solid transparent;
+       border-radius: 10px;
+       padding: 10px;
+       box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+       transition: all 0.3s ease;
+       &:hover {
+        border: 1px solid white;
+        transform: scale(1.05);
+        box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2);
+       }
+       
     p {
         width: 200px;
     }
@@ -69,20 +83,24 @@ function Pesquisa() {
    <PesquisaContainer>
     <Titulo>Já sabe por onde começar ?</Titulo>
     <Subtitulo>Encontre em nossa estante </Subtitulo>
-    <Input placeholder="Escreva sua próxima leitura" 
-     onBlur={evento => {
-      const textoDigitado = evento.target.value
+    <Input placeholder="Escolha seu próximo livro"
+     onBlur={evento => { 
+      const textoDigitado = evento.target.value 
+      if (!textoDigitado) {
+        setLivrosPesquisados([]);
+        return;
+      }
       const resultadoPesquisa = livros.filter( livro => livro.titulo.toLowerCase().includes(textoDigitado.toLowerCase()) )
-      setLivrosPesquisados(resultadoPesquisa)
+      setLivrosPesquisados(resultadoPesquisa) 
   }}/>
   {livrosPesquisados.length > 0 && (
     <ResultadoContainer>
       {livrosPesquisados.map(livro => (
         <LivroCard key={livro.id || livro.titulo}>
+          <img src={livro.src} alt={livro.titulo} />
           <p><strong>{livro.titulo}</strong></p>
           <p><strong>{livro.autor}</strong></p>
           <p><strong>{livro.preco}</strong></p>
-          <img src={livro.src} alt={livro.titulo} />
         </LivroCard>
       ))}
     </ResultadoContainer>
