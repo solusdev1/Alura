@@ -1,9 +1,10 @@
 import Input from '../Input';
 import styled from 'styled-components';
-import { useState } from 'react';
+import { useState } from 'react'; //
 import { livros } from './dadospesquisa';
 
 const PesquisaContainer = styled.section`
+        marging-top: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -38,9 +39,11 @@ const ResultadoContainer = styled.div`
         width: 100%;
         max-width: 1200px;
         padding: 0 20px;
+        
 `
 
 const LivroCard = styled.div`
+     
        display: flex;
     justify-content: center;
     align-items: center;
@@ -55,15 +58,16 @@ const LivroCard = styled.div`
     &:hover {
         border: 1px solid white;
     }
+        
 `
 
 function Pesquisa() {
   
-  const[livrosPesquisados, setLivrosPesquisados] = useState([]);
+  const[livrosPesquisados, setLivrosPesquisados] = useState([]); //Estado para armazenar os livros pesquisados
  
   return(
    <PesquisaContainer>
-    <Titulo>Já sabe por onde começar?</Titulo>
+    <Titulo>Já sabe por onde começar ?</Titulo>
     <Subtitulo>Encontre em nossa estante </Subtitulo>
     <Input placeholder="Escreva sua próxima leitura" 
      onBlur={evento => {
@@ -75,9 +79,9 @@ function Pesquisa() {
     <ResultadoContainer>
       {livrosPesquisados.map(livro => (
         <LivroCard key={livro.id || livro.titulo}>
-          <h2>{livro.titulo}</h2>
-          <p>{livro.autor}</p>
-          <p>{livro.preco}</p>
+          <p><strong>{livro.titulo}</strong></p>
+          <p><strong>{livro.autor}</strong></p>
+          <p><strong>{livro.preco}</strong></p>
           <img src={livro.src} alt={livro.titulo} />
         </LivroCard>
       ))}

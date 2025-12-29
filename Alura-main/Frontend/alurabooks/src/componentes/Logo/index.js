@@ -1,5 +1,5 @@
 import logo from '../../imagens/logo.svg';
-
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
 const LogoHeader = styled.div`
@@ -16,8 +16,12 @@ margin-right: 10px;
 function Logo() {
   return (
     <LogoHeader>
+      <Link to="/">
       <LogoImg src={logo} alt="logo" />
+      </Link>
+     
       <p><strong>Solus Books</strong></p>
+   
     </LogoHeader>
   )
 }
