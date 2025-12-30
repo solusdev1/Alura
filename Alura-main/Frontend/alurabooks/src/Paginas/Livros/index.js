@@ -1,22 +1,29 @@
 import styled from "styled-components";
-import React from 'react';
-import {livros} from '../../componentes/Pesquisa/dadospesquisa';
+import React from "react";
+import { livros } from "../../componentes/Pesquisa/dadospesquisa";
 
-
-
-const Container = styled.section`
+const Container = styled.div`
+  background-image: linear-gradient(to bottom, #002F52 35%, #326589);
+  font-size: 16px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+  max-width: auto;
+  margin auto;
+  margin-top: 100px;
+  width: 100%;
+  height: 100%;
   display: grid;
-  /* Cria uma grade responsiva: colunas de no mínimo 200px. 
-     O auto-fill garante que eles fiquem um ao lado do outro. */
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
-  padding: 30px;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 100px;
+ 
+ 
 `;
 
-const LivroCard = styled.div `
-  background-color: #FFF;
+const LivroCard = styled.div`
+  background-color: #fff;
   border-radius: 10px;
   padding: 15px;
   text-align: center;
@@ -31,7 +38,7 @@ const LivroCard = styled.div `
 
   img {
     width: 100%;
-    max-width: 150px; /* Mantém as capas dos livros com tamanho padrão */
+    max-width: 200px; /* Mantém as capas dos livros com tamanho padrão */
     height: 200px;
     object-fit: cover;
     border-radius: 5px;
@@ -49,27 +56,23 @@ const LivroCard = styled.div `
   }
 `;
 
-
-
 const listaLivros = livros;
-
-
 
 function LivrosContainer() {
   return (
     <Container>
-      {listaLivros.map(livro => (
+      {listaLivros.map((livro) => (
         <LivroCard key={livro.id}>
           <img src={livro.src} alt={livro.titulo} />
           <h2>{livro.titulo}</h2>
           <p>{livro.autor}</p>
-          <p><strong>{livro.preco}</strong></p>
+          <p>
+            <strong>{livro.preco}</strong>
+          </p>
         </LivroCard>
       ))}
     </Container>
   );
 }
-
-
 
 export default LivrosContainer;

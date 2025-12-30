@@ -51,10 +51,10 @@ const Dropdown = styled.ul` //Componente para estilizar o dropdown
 
 const ItemDropdown = styled.li` //Componente para estilizar o dropdown
   padding: 10px;
-  text-align: left;
+  text-align: center;
 
   &:hover {
-    background-color: #f0f0f0;
+    background-color:rgb(255, 255, 255);
   }
 `;
 

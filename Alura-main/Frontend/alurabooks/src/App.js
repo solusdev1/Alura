@@ -13,6 +13,20 @@ import Favoritos from './Paginas/Favoritos/favoritos';
 import Livros from './Paginas/Livros/index';
 import Cursos from './Paginas/Cursos/index';
 
+
+const Header = styled.header`
+background-color: #FFF;
+display: flex;
+align-items: center;
+padding: 0 15px;
+position: fixed;
+top: 0;
+width: 100vw;
+height: 80;
+
+
+`;
+
 const AppContainer = styled.div`
   
   width: 100vw;
@@ -20,47 +34,31 @@ const AppContainer = styled.div`
   background-image: linear-gradient(90deg, #002F52 35%, #326589);
 `;
 
-const Header = styled.header`
-  background-color: #FFF;
-  display: flex;
-  align-items: center;
-  padding: 0 15px;
-  position: fixed;
-  top: 0;
-  width: 100vw;
-  height: 80;
-
-
-`;
-
-  
 
 
 function App() {
   return (
     <BrowserRouter>
+      <Header>
+        <Logo />
+        <OpcoesHeader /> 
+        <IconesHeader />
+      </Header>
       <Routes>
-      
-      <Route path="/livros" element={<Livros />} />
-      <Route path="/cursos" element={<Cursos />} />
-      <Route path="/destaques" element={<Destaques />} />
-      <Route path="/novidades" element={<Novidades />} />
-      <Route path="/mais-vendidos" element={<MaisVendidos />} />
-      <Route path="/minha-estante" element={<MinhaEstante />} />
-      <Route path="/favoritos" element={<Favoritos />} />
-    </Routes>
-            <AppContainer>
-
-          <Header>
-          <Logo />
-          <OpcoesHeader /> 
-          <IconesHeader />
-        </Header>
-        <Pesquisa />
-      </AppContainer>
-        
-      </BrowserRouter>
-     
+        <Route path="/" element={
+          <AppContainer>
+            <Pesquisa />
+          </AppContainer>
+        } />
+        <Route path="/livros" element={<Livros />} />
+        <Route path="/cursos" element={<Cursos />} />
+        <Route path="/destaques" element={<Destaques />} />
+        <Route path="/novidades" element={<Novidades />} />
+        <Route path="/mais-vendidos" element={<MaisVendidos />} />
+        <Route path="/minha-estante" element={<MinhaEstante />} />
+        <Route path="/favoritos" element={<Favoritos />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 export default App;

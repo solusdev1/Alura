@@ -11,7 +11,7 @@ const Icones = styled.ul`
   display: flex;
   align-items: center;
   list-style: none;
-  gap: 30px;
+  gap: 10px;
 `;
 const icones = [perfil, sacola];
 
