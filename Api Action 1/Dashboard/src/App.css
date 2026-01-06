@@ -1,0 +1,279 @@
+.App {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.App-header {
+  padding: 2rem;
+}
+
+.App-header h1 {
+  font-size: 2.5em;
+  line-height: 1.1;
+  color: #00a8e8;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.App-header p {
+  color: #888;
+  margin-bottom: 1rem;
+}
+
+.server-info {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.status-badge.running {
+  background-color: #22c55e;
+  color: #000;
+}
+
+.status-badge.offline {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.last-update {
+  color: #888;
+  font-size: 0.85em;
+}
+
+.filters {
+  display: flex;
+  gap: 2rem;
+  margin: 2rem 0;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.filter-group label {
+  color: #888;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.filter-group select {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background-color: #1a1a1a;
+  color: #fff;
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.filter-group select:hover {
+  border-color: #646cff;
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: #646cff;
+  box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.1);
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.summary-card {
+  background-color: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.summary-card:hover {
+  border-color: #00a8e8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 168, 232, 0.2);
+}
+
+.summary-card.small {
+  cursor: default;
+  padding: 1.5rem;
+}
+
+.summary-icon {
+  font-size: 2.5em;
+  line-height: 1;
+}
+
+.summary-content {
+  flex: 1;
+}
+
+.summary-label {
+  color: #666;
+  font-size: 0.9em;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.summary-value {
+  color: #000;
+  font-size: 2.5em;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.summary-hint {
+  color: #999;
+  font-size: 0.85em;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
+.results-info {
+  text-align: center;
+  color: #888;
+  margin-bottom: 1.5rem;
+  font-size: 0.95em;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.25s;
+  color: #fff;
+}
+
+button:hover:not(:disabled) {
+  border-color: #646cff;
+  background-color: #242424;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.error {
+  background-color: #ff4444;
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.device-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s;
+}
+
+.device-card:hover {
+  border-color: #646cff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.2);
+}
+
+.device-card h3 {
+  color: #646cff;
+  margin: 0 0 1rem 0;
+  font-size: 1.3em;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.5rem;
+}
+
+.device-info p {
+  margin: 0.5rem 0;
+  font-size: 0.9em;
+  color: #ccc;
+  display: flex;
+  justify-content: space-between;
+}
+
+.device-info strong {
+  color: #fff;
+  margin-right: 0.5rem;
+}
+
+.status {
+  padding: 0.2em 0.6em;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.status.online {
+  background-color: #22c55e;
+  color: #000;
+}
+
+.status.offline {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.status.unmanaged {
+  background-color: #f59e0b;
+  color: #000;
+}
+
+.device-card.offline {
+  border-color: #ef4444;
+  opacity: 0.85;
+}
+
+.device-card.offline h3 {
+  color: #ef4444;
+}
