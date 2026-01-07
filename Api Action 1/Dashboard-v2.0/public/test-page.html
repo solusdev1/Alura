@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Dashboard v2.0</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; margin: 10px 5px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+        .loading { color: #666; font-style: italic; }
+        .error { border-left-color: #dc3545; color: #dc3545; }
+        .success { border-left-color: #28a745; }
+        h1 { color: #333; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { padding: 15px; background: #e9ecef; border-radius: 4px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #007bff; }
+        .stat-label { font-size: 12px; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste Dashboard v2.0</h1>
+        
+        <div>
+            <button onclick="checkStatus()">📊 Verificar Status</button>
+            <button onclick="syncData()" id="syncBtn">🔄 Sincronizar com Action1</button>
+            <button onclick="getInventory()">📦 Consultar Inventário</button>
+            <button onclick="clearInventory()">🗑️ Limpar Inventário</button>
+        </div>
+
+        <div id="stats" class="stats" style="display: none;"></div>
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3002';
+
+        function showResult(data, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result' + (isError ? ' error' : ' success');
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function showLoading(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = message;
+        }
+
+        function showStats(stats) {
+            if (!stats) return;
+            const statsDiv = document.getElementById('stats');
+            statsDiv.style.display = 'grid';
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${stats.total || 0}</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.online || 0}</div>
+                    <div class="stat-label">Online</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.offline || 0}</div>
+                    <div class="stat-label">Offline</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.gerenciados || 0}</div>
+                    <div class="stat-label">Gerenciados</div>
+                </div>
+            `;
+        }
+
+        async function checkStatus() {
+            showLoading('Verificando status...');
+            try {
+                const response = await fetch(`${API_URL}/api/status`);
+                const data = await response.json();
+                showResult(data);
+                if (data.stats) showStats(data.stats);
+            } catch (error) {
+                showResult({ error: error.message }, true);
+            }
+        }
+
+        async function syncData() {
+            const btn = document.getElementById('syncBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Sincronizando...';
+            showLoading('Sincronizando com Action1... Isso pode levar alguns minutos.');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${API_URL}/api/sync`, { method: 'POST' });
+                const data = await response.json();
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                data._syncDuration = `${duration}s`;
+                showResult(data);
+                if (data.stats) showStats(data.stats);
+            } catch (error) {
+                showResult({ error: error.message }, true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔄 Sincronizar com Action1';
+            }
+        }
+
+        async function getInventory() {
+            showLoading('Consultando inventário...');
+            try {
+                const response = await fetch(`${API_URL}/api/inventory`);
+                const data = await response.json();
+                showResult(data);
+                if (data.stats) showStats(data.stats);
+            } catch (error) {
+                showResult({ error: error.message }, true);
+            }
+        }
+
+        async function clearInventory() {
+            if (!confirm('Tem certeza que deseja limpar o inventário?')) return;
+            
+            showLoading('Limpando inventário...');
+            try {
+                const response = await fetch(`${API_URL}/api/inventory`, { method: 'DELETE' });
+                const data = await response.json();
+                showResult(data);
+                document.getElementById('stats').style.display = 'none';
+            } catch (error) {
+                showResult({ error: error.message }, true);
+            }
+        }
+
+        // Verificar status ao carregar
+        checkStatus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+server-log.txt
+
+# Environment variables
+.env
+.env.local
+
+# URLs e informações de teste
+URLS_TESTE.txt
+
+# Build outputs
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# Backup files
+backup/
+
+# Tests temporários
+tests/debug-*.js
+tests/test-*.js
+
+# OS
+.DS_Store
+Thumbs.db
