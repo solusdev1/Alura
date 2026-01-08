@@ -21,6 +21,9 @@ import {
     closeDB
 } from './database/database.js';
 
+import { updateDisplayName } from './routes/update-display-name.js';
+import { saveDisplayName } from './routes/save-display-name.js';
+
 const app = express();
 const PORT = 3002;
 
@@ -245,6 +248,10 @@ async function performSync() {
             const mapped = items.map(dev => {
                 const hw = dev.hardware || {};
                 const inv = dev.inventory || {};
+
+                const custom = dev.custom || [];
+                const adDisplayName = 
+                custom.find(c => c.name === 'AD Display Name')?.value || '';
             
                 const getMemory = () =>
                     dev.memory_total ??
@@ -280,17 +287,6 @@ async function performSync() {
                 } else if (dev.type === 'Endpoint') {
                     tipoDispositivo = 'Workstation';
                 }
-                
-                // Log para debug - verificar campos disponíveis (apenas primeiro dispositivo)
-                if (todosOsEndpoints.length === 0) {
-                    console.log('🔍 DEBUGGING - Campos disponíveis no primeiro dispositivo:');
-                    console.log('   Todos os campos:', Object.keys(dev));
-                    console.log('   CPU_model:', dev.CPU_model);
-                    console.log('   CPU_name:', dev.CPU_name);
-                    console.log('   CPU_size:', dev.CPU_size);
-                    console.log('   manufacturer:', dev.manufacturer);
-                    console.log('   Objeto completo do dispositivo:', JSON.stringify(dev, null, 2).substring(0, 500));
-                }
             
                 return {
                     id: dev.id,
@@ -299,7 +295,8 @@ async function performSync() {
                     ip: dev.address || 'N/A',
                     mac: dev.MAC || 'N/A',
                     so: dev.OS || 'N/A',
-                    usuario: dev.user || 'N/A',
+                    usuario: (dev.user || 'N/A').replace(/\\/g, '/'),
+                    adDisplayName,
                     status: statusNormalizado,
                     organizacao: org.name,
                     tipo: tipoDispositivo,
@@ -313,7 +310,8 @@ async function performSync() {
                     last_seen: dev.last_seen || null,
                     agent_version: dev.agent_version || null,
                     vulnerabilities: dev.vulnerabilities || { critical: 0, other: 0 },
-                    missing_updates: dev.missing_updates || { critical: 0, other: 0 }
+                    missing_updates: dev.missing_updates || { critical: 0, other: 0 },
+                    custom: dev.custom || []
                 };
             });
 
@@ -474,6 +472,12 @@ app.delete('/api/inventory', async (req, res) => {
     }
 });
 
+// 🆕 Rota para atualizar Display Name do PowerShell
+app.post('/api/update-display-name', updateDisplayName);
+
+// 🆕 Rota para salvar Display Name direto no MongoDB (bypass Action1 API)
+app.post('/api/save-display-name', saveDisplayName);
+
 // Rota para exportar CSV
 app.get('/api/export/csv', async (req, res) => {
     try {
@@ -582,12 +586,14 @@ app.listen(PORT, async () => {
     
     console.log(`🚀 Servidor v2.0 rodando em http://localhost:${PORT}`);
     console.log(`📊 Endpoints disponíveis:`);
-    console.log(`   GET    /test                    - Página de testes`);
-    console.log(`   GET    /api/status              - Status do servidor e banco`);
-    console.log(`   GET    /api/inventory           - Obter inventário (offline)`);
+    console.log(`   GET    /test                         - Página de testes`);
+    console.log(`   GET    /api/status                   - Status do servidor e banco`);
+    console.log(`   GET    /api/inventory                - Obter inventário (offline)`);
     console.log(`   GET    /api/inventory/status/:status - Filtrar por status`);
-    console.log(`   POST   /api/sync                - Sincronizar com Action1`);
-    console.log(`   DELETE /api/inventory           - Limpar inventário`);
+    console.log(`   POST   /api/sync                     - Sincronizar com Action1`);
+    console.log(`   POST   /api/update-display-name      - Atualizar Display Name do PowerShell`);
+    console.log(`   POST   /api/save-display-name        - Salvar Display Name direto no MongoDB`);
+    console.log(`   DELETE /api/inventory                - Limpar inventário`);
     console.log(`\n💾 Banco de dados: MongoDB (local)`);
     console.log(`⏰ Sincronização automática: Diariamente às 03:00`);
     console.log(`📦 Dispositivos no banco: ${stats.total}`);

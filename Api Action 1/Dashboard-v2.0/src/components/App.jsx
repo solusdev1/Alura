@@ -180,6 +180,7 @@ function App() { // Componente principal da aplicação
     const matchBusca = busca === '' || 
       device.nome?.toLowerCase().includes(busca.toLowerCase()) ||
       device.usuario?.toLowerCase().includes(busca.toLowerCase()) ||
+      device.adDisplayName?.toLowerCase().includes(busca.toLowerCase()) ||
       device.ip?.toLowerCase().includes(busca.toLowerCase()) ||
       device.organizacao?.toLowerCase().includes(busca.toLowerCase())
     return matchTipo && matchStatus && matchBusca
@@ -192,8 +193,8 @@ function App() { // Componente principal da aplicação
         valorB = b.tipo || '';
         break;
       case 'responsavel':
-        valorA = a.usuario || '';
-        valorB = b.usuario || '';
+        valorA = a.adDisplayName || a.usuario || '';
+        valorB = b.adDisplayName || b.usuario || '';
         break;
       case 'nome':
         valorA = a.nome || '';
@@ -402,7 +403,7 @@ function App() { // Componente principal da aplicação
                 {dispositivosFiltrados.map((device) => (
                   <tr key={device.id} className={device.status?.toLowerCase()}>
                     <td><span className="badge-tipo">{device.tipo || 'N/A'}</span></td>
-                    <td>{device.usuario || 'N/A'}</td>
+                    <td>{device.adDisplayName || device.usuario || 'N/A'}</td>
                     <td className="email-col">{device.usuario ? `${device.usuario.toLowerCase().replace(/\\/g, '').replace(/\s/g, '.').replace(/carrarolog/g, '')}@carrarologistica.com.br` : 'N/A'}</td>
                     <td className="device-name">{device.nome || 'N/A'}</td>
                     <td className="description">{formatarDescricao(device)}</td>

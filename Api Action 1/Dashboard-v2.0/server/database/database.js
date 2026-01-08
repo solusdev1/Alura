@@ -130,6 +130,24 @@ export async function saveDevices(devices) {
         const database = await getDB();
         const collection = database.collection(COLLECTION_DEVICES);
         
+        // PRESERVAR adDisplayName existentes
+        console.log('   🔄 Preservando Display Names existentes...');
+        const existingDevices = await collection.find({}, { projection: { id: 1, adDisplayName: 1 } }).toArray();
+        const displayNameMap = new Map(
+            existingDevices
+                .filter(d => d.adDisplayName && d.adDisplayName.trim() !== '')
+                .map(d => [d.id, d.adDisplayName])
+        );
+        
+        // Aplicar Display Names preservados
+        devices.forEach(device => {
+            if (displayNameMap.has(device.id)) {
+                device.adDisplayName = displayNameMap.get(device.id);
+            }
+        });
+        
+        console.log(`   ✅ ${displayNameMap.size} Display Names preservados`);
+        
         // Limpar coleção antes de inserir novos dados
         await collection.deleteMany({});
         
