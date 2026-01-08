@@ -51,13 +51,14 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // Parse the path - Vercel passa apenas o path após /api/
-    const path = req.url || '';
+    // Parse the path - Vercel adiciona ?path= como query param
+    const urlParts = req.url.split('?');
+    const path = urlParts[0] || '';
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
     try {
         // Status endpoint
-        if (cleanPath.includes('status') || path === '' || path === '/') {
+        if (cleanPath === '/' || cleanPath === '/status' || cleanPath.includes('status')) {
             const db = await connectDB();
             const devices = await db.collection('devices').find({}).toArray();
             const metadata = await db.collection('metadata').findOne({});
@@ -67,15 +68,13 @@ export default async function handler(req, res) {
                 database: 'connected',
                 totalDevices: devices.length,
                 lastSync: metadata?.lastSync || null,
-                environment: 'vercel',
-                path: path,
-                cleanPath: cleanPath
+                environment: 'vercel'
             });
         }
 
         // Inventory by status
-        if (cleanPath.includes('inventory/status/')) {
-            const parts = cleanPath.split('/');
+        if (cleanPath.includes('/inventory/status/')) {
+            const parts = cleanPath.split('/').filter(p => p);
             const status = parts[parts.length - 1];
             
             // 🔒 Validar e sanitizar status
@@ -100,7 +99,7 @@ export default async function handler(req, res) {
         }
 
         // Inventory endpoint
-        if (cleanPath.includes('inventory')) {
+        if (cleanPath.includes('/inventory')) {
             const db = await connectDB();
             const devices = await db.collection('devices').find({}).toArray();
             return res.status(200).json({ data: devices });
