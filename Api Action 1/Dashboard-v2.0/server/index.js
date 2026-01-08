@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import credentials from './database/configs.js';
@@ -22,9 +24,56 @@ import {
 const app = express();
 const PORT = 3002;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// 🔒 SEGURANÇA: Helmet.js - Headers de segurança
+app.use(helmet({
+    contentSecurityPolicy: false, // Desabilitado para desenvolvimento
+    crossOriginEmbedderPolicy: false
+}));
+
+// 🔒 SEGURANÇA: Rate Limiting - Prevenir abuso de API
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 100, // Limite de 100 requisições por IP
+    message: { error: 'Muitas requisições. Tente novamente em 15 minutos.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use('/api/', limiter);
+
+// 🔒 SEGURANÇA: CORS Whitelist - Apenas origens confiáveis
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3002',
+    'https://inventario-two-gamma.vercel.app',
+    'https://inventario-*.vercel.app' // Permitir previews do Vercel
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Permitir requisições sem origin (Postman, curl, etc.)
+        if (!origin) return callback(null, true);
+        
+        // Verificar se a origin está na whitelist
+        const isAllowed = allowedOrigins.some(allowed => {
+            if (allowed.includes('*')) {
+                const regex = new RegExp('^' + allowed.replace('*', '.*') + '$');
+                return regex.test(origin);
+            }
+            return allowed === origin;
+        });
+        
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            console.warn(`⚠️ CORS bloqueado: ${origin}`);
+            callback(new Error('Origin não permitida pelo CORS'));
+        }
+    },
+    credentials: true
+}));
+
+app.use(express.json({ limit: '10mb' })); // Limitar tamanho do body
 
 const ACTION1_BASE_URL = 'https://app.action1.com/api/3.0';
 
@@ -382,10 +431,16 @@ app.get('/api/inventory/status/:status', async (req, res) => {
     try {
         const { status } = req.params;
         
-        // Validar status
+        // 🔒 Validar e sanitizar status
         const validStatuses = ['online', 'offline', 'connected', 'disconnected'];
-        if (!validStatuses.includes(status.toLowerCase())) {
-            return res.status(400).json({ error: 'Status inválido' });
+        const sanitizedStatus = status.toLowerCase().trim();
+        
+        if (!validStatuses.includes(sanitizedStatus)) {
+            return res.status(400).json({ 
+                error: 'Status inválido',
+                validStatuses: validStatuses,
+                received: status
+            });
         }
         const devices = await getDevicesByStatus(status);
         

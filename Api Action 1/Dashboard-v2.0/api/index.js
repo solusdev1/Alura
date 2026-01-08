@@ -4,6 +4,13 @@ import { MongoClient } from 'mongodb';
 const MONGO_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.MONGODB_DATABASE || 'action1_inventory';
 
+// 🔒 SEGURANÇA: CORS Whitelist
+const ALLOWED_ORIGINS = [
+    'https://inventario-two-gamma.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3002'
+];
+
 let cachedClient = null;
 let cachedDb = null;
 
@@ -22,10 +29,23 @@ async function connectDB() {
 }
 
 export default async function handler(req, res) {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    
+    // 🔒 SEGURANÇA: Verificar origem
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (!origin) {
+        // Permitir requisições sem origin (curl, Postman)
+        res.setHeader('Access-Control-Allow-Origin', '*');
+    } else {
+        console.warn(`⚠️ CORS bloqueado: ${origin}`);
+    }
+    
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -58,17 +78,23 @@ export default async function handler(req, res) {
             const parts = cleanPath.split('/');
             const status = parts[parts.length - 1];
             
-            // Validar status
+            // 🔒 Validar e sanitizar status
             const validStatuses = ['online', 'offline', 'connected', 'disconnected'];
-            if (!validStatuses.includes(status.toLowerCase())) {
-                return res.status(400).json({ error: 'Status inválido' });
+            const sanitizedStatus = status.toLowerCase().trim();
+            
+            if (!validStatuses.includes(sanitizedStatus)) {
+                return res.status(400).json({ 
+                    error: 'Status inválido',
+                    validStatuses: validStatuses,
+                    received: status
+                });
             }
             
             // Sanitizar para prevenir ReDoS
-            const sanitizedStatus = status.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedStatus = sanitizedStatus.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const db = await connectDB();
             const devices = await db.collection('devices')
-                .find({ status: new RegExp(sanitizedStatus, 'i') })
+                .find({ status: new RegExp(escapedStatus, 'i') })
                 .toArray();
             return res.status(200).json({ data: devices });
         }
