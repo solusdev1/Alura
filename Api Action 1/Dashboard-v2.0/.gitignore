@@ -15,6 +15,11 @@ package-lock.json
 # MongoDB credentials
 server/database/configs.js
 
+# Scripts de configuração com credenciais
+setup-vercel-env.ps1
+config-vercel.ps1
+VARIAVEIS_VERCEL.txt
+
 # ==========================================
 # LOGS & DEBUG
 # ==========================================
