@@ -27,7 +27,7 @@
 No painel do Vercel, adicione as variáveis:
 
 ```env
-MONGODB_URI=mongodb+srv://gestordavidoliveira_db_user:sh9biC5zzJFfhqh1@cluster0.88shjh6.mongodb.net/?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://SEU_USUARIO:SUA_SENHA@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
 MONGODB_DATABASE=action1_inventory
 ```
 

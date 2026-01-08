@@ -26,7 +26,7 @@ https://cloud.mongodb.com
 A connection string deve incluir `retryWrites=true&w=majority`:
 
 ```
-mongodb+srv://gestordavidoliveira_db_user:sh9biC5zzJFfhqh1@cluster0.88shjh6.mongodb.net/?retryWrites=true&w=majority
+mongodb+srv://SEU_USUARIO:SUA_SENHA@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
 ```
 
 ### 4️⃣ Verificar Senha

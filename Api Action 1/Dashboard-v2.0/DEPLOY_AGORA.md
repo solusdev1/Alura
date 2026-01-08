@@ -35,7 +35,7 @@ dist/ pronto para deploy
 
 ```
 Name: MONGODB_URI
-Value: mongodb+srv://gestordavidoliveira_db_user:sh9biC5zzJFfhqh1@cluster0.88shjh6.mongodb.net/?retryWrites=true&w=majority
+Value: mongodb+srv://SEU_USUARIO:SUA_SENHA@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
 Environment: Production, Preview, Development
 ```
 
