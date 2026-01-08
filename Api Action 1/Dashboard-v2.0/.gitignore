@@ -19,6 +19,10 @@ server/database/configs.js
 setup-vercel-env.ps1
 config-vercel.ps1
 VARIAVEIS_VERCEL.txt
+test-mongodb.js
+
+# Archive com credenciais antigas
+../archive/Dashboard-v1.0/src/api/configs.js
 
 # ==========================================
 # LOGS & DEBUG

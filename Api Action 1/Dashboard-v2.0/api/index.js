@@ -57,9 +57,18 @@ export default async function handler(req, res) {
         if (cleanPath.includes('inventory/status/')) {
             const parts = cleanPath.split('/');
             const status = parts[parts.length - 1];
+            
+            // Validar status
+            const validStatuses = ['online', 'offline', 'connected', 'disconnected'];
+            if (!validStatuses.includes(status.toLowerCase())) {
+                return res.status(400).json({ error: 'Status inválido' });
+            }
+            
+            // Sanitizar para prevenir ReDoS
+            const sanitizedStatus = status.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const db = await connectDB();
             const devices = await db.collection('devices')
-                .find({ status: new RegExp(status, 'i') })
+                .find({ status: new RegExp(sanitizedStatus, 'i') })
                 .toArray();
             return res.status(200).json({ data: devices });
         }

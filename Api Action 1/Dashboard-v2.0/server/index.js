@@ -381,6 +381,12 @@ app.get('/api/inventory', async (req, res) => {
 app.get('/api/inventory/status/:status', async (req, res) => {
     try {
         const { status } = req.params;
+        
+        // Validar status
+        const validStatuses = ['online', 'offline', 'connected', 'disconnected'];
+        if (!validStatuses.includes(status.toLowerCase())) {
+            return res.status(400).json({ error: 'Status inválido' });
+        }
         const devices = await getDevicesByStatus(status);
         
         res.json({
