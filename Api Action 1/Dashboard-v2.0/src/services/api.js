@@ -1,5 +1,8 @@
 // API para consumir o servidor local v2.0
-const SERVER_URL = 'http://localhost:3002';
+// Detecta automaticamente se está em produção (Vercel) ou desenvolvimento (local)
+const SERVER_URL = import.meta.env.PROD 
+    ? '' // Vercel usa mesma origem
+    : 'http://localhost:3002';
 
 export async function syncInventory() {
     const response = await fetch(`${SERVER_URL}/api/sync`, {
