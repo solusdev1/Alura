@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import '../styles/App.css'
 import { getInventory, syncInventory, getServerStatus } from '../services/api.js'
 
-function App() {
+function App() { // Componente principal da aplicação
   const [dispositivos, setDispositivos] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -19,30 +19,29 @@ function App() {
     nome: 200,
     descricao: 300,
     status: 120,
-    localizacao: 150,
-    data: 150
-  })
+    localizacao: 150
+  }) // Larguras iniciais das colunas
   const [isResizing, setIsResizing] = useState(null)
   const [tableHeight, setTableHeight] = useState(500)
   const [isResizingHeight, setIsResizingHeight] = useState(false)
   const [headerHeight, setHeaderHeight] = useState(null)
   const [isResizingHeader, setIsResizingHeader] = useState(false)
 
-  const handleOrdenar = (campo) => {
+  const handleOrdenar = (campo) => { // Função para ordenar por coluna
     setOrdenacao(prev => ({
       campo: campo,
       direcao: prev.campo === campo && prev.direcao === 'asc' ? 'desc' : 'asc'
     }))
   }
 
-  const handleMouseDown = (e, column) => {
+  const handleMouseDown = (e, column) => { // Função para redimensionar colunas
     e.preventDefault()
     e.stopPropagation()
     setIsResizing({ column, startX: e.pageX, startWidth: columnWidths[column] })
   }
 
-  useEffect(() => {
-    const handleMouseMove = (e) => {
+  useEffect(() => { // Redimensionar colunas
+    const handleMouseMove = (e) => { // Função para redimensionar colunas
       if (!isResizing) return
       const diff = e.pageX - isResizing.startX
       const newWidth = Math.max(50, isResizing.startWidth + diff)
@@ -64,7 +63,7 @@ function App() {
     }
   }, [isResizing])
 
-  const handleHeightMouseDown = (e) => {
+  const handleHeightMouseDown = (e) => { // Função para redimensionar altura da tabela
     e.preventDefault()
     setIsResizingHeight({ startY: e.pageY, startHeight: tableHeight })
   }
@@ -97,7 +96,7 @@ function App() {
     setIsResizingHeader({ startY: e.pageY, startHeight: headerHeight || 0 })
   }
 
-  useEffect(() => {
+  useEffect(() => { // Redimensionar altura do cabeçalho
     const handleMouseMove = (e) => {
       if (!isResizingHeader) return
       const diff = e.pageY - isResizingHeader.startY
@@ -120,7 +119,7 @@ function App() {
     }
   }, [isResizingHeader])
 
-  const verificarServidor = async () => {
+  const verificarServidor = async () => { // Verificar status do servidor
     try {
       const status = await getServerStatus()
       setServerStatus(status)
@@ -132,7 +131,7 @@ function App() {
     }
   }
 
-  const carregarDados = async () => {
+  const carregarDados = async () => { // Carregar dados do inventário
     setLoading(true)
     setError(null)
     
@@ -149,7 +148,7 @@ function App() {
     }
   }
 
-  const sincronizarAutomaticamente = async () => {
+  const sincronizarAutomaticamente = async () => { // Sincronizar automaticamente com Action1
     setLoading(true)
     setError(null)
     
@@ -168,13 +167,14 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    // Sincronizar automaticamente ao carregar
-    sincronizarAutomaticamente()
+  useEffect(() => { // Carregar dados ao montar o componente
+    // Apenas carregar dados existentes ao iniciar
+    // Não sincronizar automaticamente
+    carregarDados()
   }, [])
 
   // Filtrar dispositivos
-  const dispositivosFiltrados = dispositivos.filter(device => {
+  const dispositivosFiltrados = dispositivos.filter(device => { // Função para filtrar dispositivos
     const matchTipo = filtroTipo === 'Todos' || device.tipo === filtroTipo
     const matchStatus = filtroStatus === 'Todos' || device.status?.toLowerCase() === filtroStatus.toLowerCase()
     const matchBusca = busca === '' || 
@@ -186,7 +186,7 @@ function App() {
   }).sort((a, b) => {
     let valorA, valorB;
     
-    switch(ordenacao.campo) {
+    switch(ordenacao.campo) { // Definir valores para ordenação
       case 'tipo':
         valorA = a.tipo || '';
         valorB = b.tipo || '';
@@ -238,7 +238,7 @@ function App() {
   const totalWorkstations = dispositivos.filter(d => d.tipo === 'Workstation').length
   
   // Formatar descrição do dispositivo
-  const formatarDescricao = (device) => {
+  const formatarDescricao = (device) => { // Função para formatar descrição
     const partes = []
     if (device.memoria && device.memoria !== 'N/A') partes.push(device.memoria)
     if (device.disco && device.disco !== 'N/A') partes.push(device.disco)
@@ -396,15 +396,9 @@ function App() {
                     </div>
                     <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'localizacao')} />
                   </th>
-                  <th style={{width: columnWidths.data, position: 'relative'}}>
-                    <div onClick={() => handleOrdenar('data')} style={{cursor: 'pointer', paddingRight: '10px'}}>
-                      Última Alteração {ordenacao.campo === 'data' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                    </div>
-                    <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'data')} />
-                  </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody> 
                 {dispositivosFiltrados.map((device) => (
                   <tr key={device.id} className={device.status?.toLowerCase()}>
                     <td><span className="badge-tipo">{device.tipo || 'N/A'}</span></td>
@@ -418,15 +412,6 @@ function App() {
                       </span>
                     </td>
                     <td>{device.organizacao || 'N/A'}</td>
-                    <td className="date-col">
-                      {device.last_seen ? new Date(device.last_seen).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : 'N/A'}
-                    </td>
                   </tr>
                 ))}
               </tbody>

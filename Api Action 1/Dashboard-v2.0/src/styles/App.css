@@ -318,7 +318,6 @@
 .inventory-table th:nth-child(5) { min-width: 200px; } /* Descrição */
 .inventory-table th:nth-child(6) { min-width: 90px; } /* Status */
 .inventory-table th:nth-child(7) { min-width: 100px; } /* Localização */
-.inventory-table th:nth-child(8) { min-width: 120px; } /* Última Alteração */
 
 .inventory-table tbody tr {
   border-bottom: 1px solid #e9ecef;

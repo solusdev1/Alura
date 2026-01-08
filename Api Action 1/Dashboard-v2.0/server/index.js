@@ -15,7 +15,8 @@ import {
     getSyncMetadata,
     clearInventory,
     getStats,
-    updateSyncStatus
+    updateSyncStatus,
+    closeDB
 } from './database/database.js';
 
 const app = express();
@@ -253,7 +254,7 @@ async function performSync() {
                     status: statusNormalizado,
                     organizacao: org.name,
                     tipo: tipoDispositivo,
-                    modelo: dev.CPU_model || dev.CPUmodel || dev.hardware_model || 'N/A',
+                    // modelo: dev.CPU_model || dev.CPUmodel || dev.hardware_model || 'N/A',
                     fabricante: dev.manufacturer || 'N/A',
                     serial: dev.serial || 'N/A',
                     memoria: dev.RAM || getMemory() || 'N/A',
@@ -270,12 +271,55 @@ async function performSync() {
             todosOsEndpoints.push(...mapped);
         }
 
-        // 4️⃣ SALVAR NO BANCO DE DADOS
+        // 4️⃣ REMOVER DUPLICATAS (priorizar Online sobre Offline)
+        console.log('🔄 Removendo duplicatas (priorizando dispositivos Online)...');
+        const deviceMap = new Map();
+        
+        todosOsEndpoints.forEach(device => {
+            const nome = device.nome.toLowerCase();
+            
+            if (!deviceMap.has(nome)) {
+                // Primeiro dispositivo com este nome
+                deviceMap.set(nome, device);
+            } else {
+                // Já existe um dispositivo com este nome
+                const existing = deviceMap.get(nome);
+                
+                // Priorizar Online sobre Offline
+                if (device.status === 'Online' && existing.status === 'Offline') {
+                    console.log(`   🔄 Substituindo ${nome}: Offline → Online`);
+                    deviceMap.set(nome, device);
+                } else if (device.status === 'Online' && existing.status === 'Online') {
+                    // Se ambos online, manter o mais recente
+                    if (device.last_seen > existing.last_seen) {
+                        console.log(`   🔄 Substituindo ${nome}: Online (mais recente)`);
+                        deviceMap.set(nome, device);
+                    }
+                } else if (device.status === 'Offline' && existing.status === 'Offline') {
+                    // Se ambos offline, manter o mais recente
+                    if (device.last_seen > existing.last_seen) {
+                        deviceMap.set(nome, device);
+                    }
+                }
+                // Se device é Offline e existing é Online, manter existing (não faz nada)
+            }
+        });
+        
+        const totalAntes = todosOsEndpoints.length;
+        todosOsEndpoints = Array.from(deviceMap.values());
+        const totalDepois = todosOsEndpoints.length;
+        const duplicatasRemovidas = totalAntes - totalDepois;
+        
+        if (duplicatasRemovidas > 0) {
+            console.log(`✅ ${duplicatasRemovidas} duplicatas removidas (${totalAntes} → ${totalDepois})`);
+        }
+
+        // 5️⃣ SALVAR NO BANCO DE DADOS
         console.log('💾 Salvando no banco de dados...');
-        saveDevices(todosOsEndpoints);
+        await saveDevices(todosOsEndpoints);
 
         // Estatísticas finais
-        const stats = getStats();
+        const stats = await getStats();
         
         console.log(`\n✅ SINCRONIZAÇÃO COMPLETA E SALVA NO BANCO`);
         console.log(`📦 Total de dispositivos: ${stats.total}`);
@@ -311,11 +355,11 @@ app.post('/api/sync', async (req, res) => {
 });
 
 // Rota para obter o inventário do banco de dados (offline)
-app.get('/api/inventory', (req, res) => {
+app.get('/api/inventory', async (req, res) => {
     try {
-        const devices = getAllDevices();
-        const metadata = getSyncMetadata();
-        const stats = getStats();
+        const devices = await getAllDevices();
+        const metadata = await getSyncMetadata();
+        const stats = await getStats();
         
         res.json({
             success: true,
@@ -334,10 +378,10 @@ app.get('/api/inventory', (req, res) => {
 });
 
 // Rota para obter inventário filtrado por status
-app.get('/api/inventory/status/:status', (req, res) => {
+app.get('/api/inventory/status/:status', async (req, res) => {
     try {
         const { status } = req.params;
-        const devices = getDevicesByStatus(status);
+        const devices = await getDevicesByStatus(status);
         
         res.json({
             success: true,
@@ -354,9 +398,9 @@ app.get('/api/inventory/status/:status', (req, res) => {
 });
 
 // Rota para limpar o inventário
-app.delete('/api/inventory', (req, res) => {
+app.delete('/api/inventory', async (req, res) => {
     try {
-        clearInventory();
+        await clearInventory();
         res.json({
             success: true,
             message: 'Inventário limpo do banco de dados'
@@ -370,9 +414,9 @@ app.delete('/api/inventory', (req, res) => {
 });
 
 // Rota para exportar CSV
-app.get('/api/export/csv', (req, res) => {
+app.get('/api/export/csv', async (req, res) => {
     try {
-        const devices = getAllDevices();
+        const devices = await getAllDevices();
         
         // Cabeçalhos CSV
         const headers = [
@@ -429,16 +473,16 @@ app.get('/api/export/csv', (req, res) => {
 });
 
 // Rota de status
-app.get('/api/status', (req, res) => {
+app.get('/api/status', async (req, res) => {
     try {
-        const metadata = getSyncMetadata();
-        const stats = getStats();
+        const metadata = await getSyncMetadata();
+        const stats = await getStats();
         
         res.json({
             success: true,
             server: 'running',
             version: '2.0.0',
-            database: 'sqlite',
+            database: 'mongodb',
             lastSync: metadata.last_sync,
             syncStatus: metadata.status,
             inventoryCount: stats.total,
@@ -471,9 +515,9 @@ app.get('/test', (req, res) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
-    const metadata = getSyncMetadata();
-    const stats = getStats();
+app.listen(PORT, async () => {
+    const metadata = await getSyncMetadata();
+    const stats = await getStats();
     
     console.log(`🚀 Servidor v2.0 rodando em http://localhost:${PORT}`);
     console.log(`📊 Endpoints disponíveis:`);
@@ -483,8 +527,15 @@ app.listen(PORT, () => {
     console.log(`   GET    /api/inventory/status/:status - Filtrar por status`);
     console.log(`   POST   /api/sync                - Sincronizar com Action1`);
     console.log(`   DELETE /api/inventory           - Limpar inventário`);
-    console.log(`\n💾 Banco de dados: SQLite (sincronização offline)`);
+    console.log(`\n💾 Banco de dados: MongoDB (local)`);
     console.log(`⏰ Sincronização automática: Diariamente às 03:00`);
     console.log(`📦 Dispositivos no banco: ${stats.total}`);
     console.log(`🕐 Última sincronização: ${metadata.last_sync || 'Nunca'}`);
+});
+
+// Fechar conexão ao encerrar processo
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Encerrando servidor...');
+    await closeDB();
+    process.exit(0);
 });

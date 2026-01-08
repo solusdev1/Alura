@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Dashboard v2.0</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .status-box {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #444;
+        }
+        .status-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #333;
+            border-radius: 4px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        pre {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Teste de Conectividade - Dashboard v2.0</h1>
+    
+    <div class="status-box">
+        <h2>Status do Backend</h2>
+        <div id="backend-status" class="status-item">Verificando...</div>
+    </div>
+
+    <div class="status-box">
+        <h2>Status do Frontend</h2>
+        <div id="frontend-status" class="status-item success">✅ Frontend carregado</div>
+    </div>
+
+    <div class="status-box">
+        <h2>Ações</h2>
+        <button onclick="testarBackend()">Testar Conexão Backend</button>
+        <button onclick="carregarInventario()">Carregar Inventário</button>
+        <button onclick="sincronizar()">Sincronizar Dados</button>
+    </div>
+
+    <div class="status-box">
+        <h2>Resultado</h2>
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3002';
+
+        async function testarBackend() {
+            const resultado = document.getElementById('resultado');
+            const status = document.getElementById('backend-status');
+            
+            resultado.innerHTML = '<div class="loading">Testando conexão...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/status`);
+                const data = await response.json();
+                
+                status.innerHTML = '<span class="success">✅ Backend conectado</span>';
+                resultado.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                status.innerHTML = '<span class="error">❌ Backend não responde</span>';
+                resultado.innerHTML = `<div class="error">Erro: ${error.message}</div>
+                    <p>Verifique se o servidor está rodando na porta 3002</p>`;
+            }
+        }
+
+        async function carregarInventario() {
+            const resultado = document.getElementById('resultado');
+            resultado.innerHTML = '<div class="loading">Carregando inventário...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/inventory`);
+                const data = await response.json();
+                
+                const total = data.data ? data.data.length : 0;
+                resultado.innerHTML = `
+                    <div class="success">✅ Inventário carregado: ${total} dispositivos</div>
+                    <pre>${JSON.stringify(data, null, 2).substring(0, 1000)}...</pre>
+                `;
+            } catch (error) {
+                resultado.innerHTML = `<div class="error">❌ Erro: ${error.message}</div>`;
+            }
+        }
+
+        async function sincronizar() {
+            const resultado = document.getElementById('resultado');
+            resultado.innerHTML = '<div class="loading">Sincronizando com Action1...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/sync`, { method: 'POST' });
+                const data = await response.json();
+                
+                resultado.innerHTML = `
+                    <div class="success">✅ Sincronização concluída!</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultado.innerHTML = `<div class="error">❌ Erro: ${error.message}</div>`;
+            }
+        }
+
+        // Testar conexão ao carregar a página
+        window.addEventListener('load', () => {
+            testarBackend();
+        });
+    </script>
+</body>
+</html>

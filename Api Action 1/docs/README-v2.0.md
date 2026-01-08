@@ -4,9 +4,11 @@ Esta é a versão 2.0 do Dashboard, criada especificamente para testes e desenvo
 
 ## ✨ Novas Funcionalidades v2.0
 
-### 🗄️ Banco de Dados SQLite
+### 🗄️ Banco de Dados MongoDB
+- **MongoDB Local**: Instalado diretamente no Windows (sem Docker)
 - **Sincronização offline**: Dados persistem localmente
 - **Performance**: Acesso rápido aos dados sem consultar a API
+- **Fallback JSON**: Usa arquivos JSON se MongoDB não disponível
 - **Economia de requisições**: Reduz chamadas à API do Action1
 
 ### 📄 Paginação Melhorada
@@ -25,12 +27,25 @@ Esta é a versão 2.0 do Dashboard, criada especificamente para testes e desenvo
 |---------|------|------|
 | **Versão** | 1.0.0 | 2.0.0 |
 | **Porta** | 3001 | 3002 |
-| **Armazenamento** | Memória (volátil) | SQLite (persistente) |
+| **Armazenamento** | Memória (volátil) | MongoDB Local (persistente) |
 | **Paginação** | offset | from + next_page |
 | **Sincronização** | Manual | Manual + Automática (diária) |
 | **Offline** | ❌ | ✅ |
+| **Docker** | ❌ | ❌ |
 
 ## Como Executar
+
+### 0. Iniciar o MongoDB
+```powershell
+# Verificar se MongoDB está instalado e rodando
+cd "c:\Users\suporteti\Documents\Programação\Api Action 1\Dashboard-v2.0\config"
+.\start-mongodb-local.ps1
+
+# Se instalado como serviço:
+net start MongoDB
+```
+
+Ver guia completo: [MONGODB_LOCAL.md](MONGODB_LOCAL.md)
 
 ### 1. Instalar Dependências
 ```bash
@@ -84,12 +99,23 @@ fetch('http://localhost:3002/api/sync', { method: 'POST' })
 
 ## 💾 Banco de Dados
 
-### Localização
-`Dashboard-v2.0/data/inventory.db`
+### Tipo
+**MongoDB** instalado localmente no Windows (sem Docker)
 
-### Tabelas
-1. **inventory** - Armazena todos os dispositivos
-2. **sync_metadata** - Informações sobre sincronizações
+### Conexão
+- **URI**: `mongodb://127.0.0.1:27017`
+- **Database**: `action1_inventory`
+- **Collections**:
+  1. `devices` - Armazena todos os dispositivos
+  2. `metadata` - Informações sobre sincronizações
+
+### Fallback
+Se o MongoDB não estiver disponível, o sistema usa automaticamente arquivos JSON em `data/`:
+- `data/inventory.json`
+- `data/metadata.json`
+
+### Localização (se usando fallback JSON)
+`Dashboard-v2.0/data/`
 
 ### Campos Adicionais
 - `last_seen` - Última vez que o dispositivo foi visto

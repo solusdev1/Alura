@@ -7,3 +7,7 @@ const credentials = {
 };
 
 export default credentials;
+
+
+//gestordavidoliveira_db_user 
+//sh9biC5zzJFfhqh1

@@ -1,106 +1,131 @@
-# 📁 Estrutura do Projeto Dashboard v2.0
+# Dashboard v2.0 - Estrutura de Pastas
 
-## Organização de Pastas
+## 📁 Estrutura Reorganizada
 
 ```
 Dashboard-v2.0/
-├── 📂 server/                    # Backend Node.js + Express
-│   ├── 📂 database/              # Camada de dados
-│   │   ├── configs.js           # Credenciais Action1
-│   │   └── database.js          # Funções de persistência (JSON)
-│   ├── 📂 routes/               # Rotas da API (futuro)
-│   ├── 📂 controllers/          # Lógica de negócio (futuro)
-│   ├── 📂 utils/                # Utilitários do servidor (futuro)
-│   └── index.js                 # Servidor principal (Express + Cron)
 │
-├── 📂 src/                       # Frontend React
-│   ├── 📂 components/           # Componentes React
-│   │   └── App.jsx              # Componente principal
-│   ├── 📂 services/             # Serviços de API
-│   │   └── api.js               # Cliente API (chamadas ao backend)
-│   ├── 📂 styles/               # Arquivos CSS
-│   │   ├── App.css              # Estilos do App
-│   │   └── index.css            # Estilos globais
-│   └── main.jsx                 # Entry point React
+├── 📄 Arquivos de Configuração
+│   ├── .env                    # Configurações MongoDB Atlas (NÃO COMMITAR!)
+│   ├── .env.example            # Exemplo de configuração
+│   ├── .gitignore              # Arquivos ignorados pelo Git
+│   ├── package.json            # Dependências do projeto
+│   ├── vite.config.js          # Configuração do Vite
+│   └── README.md               # Documentação principal
 │
-├── 📂 public/                    # Arquivos estáticos
-│   ├── index.html               # HTML principal
-│   └── test-page.html           # Página de teste da API
+├── 📂 archive/                 # Arquivos antigos/backup
+│   ├── server-simple.js
+│   └── TESTE.md
 │
-├── 📂 data/                      # Dados persistidos
-│   ├── inventory.json           # Inventário de dispositivos
-│   └── metadata.json            # Metadados de sincronização
+├── 📂 data/                    # Dados persistentes (fallback JSON)
+│   ├── inventory.json          # Inventário (se MongoDB offline)
+│   └── metadata.json           # Metadados de sincronização
 │
-├── 📂 logs/                      # Logs do servidor
-│   └── server-log.txt           # Log de operações
+├── 📂 docs/                    # Documentação
+│   └── SETUP_RAPIDO.txt        # Guia rápido de configuração
 │
-├── 📂 tests/                     # Testes
-│   ├── test-api.js              # Testes de API
-│   ├── test-full-sync.js        # Teste sincronização completa
-│   ├── test-pagination.js       # Teste paginação
-│   └── test-sync.js             # Testes diversos
+├── 📂 logs/                    # Logs do servidor
+│   ├── server-log.txt
+│   └── server-debug.txt
 │
-├── 📂 backup/                    # Arquivos de backup
-│   └── server-simple.js         # Versão antiga do servidor
+├── 📂 public/                  # Arquivos públicos
+│   ├── debug.html              # Página de debug/testes
+│   └── test-page.html          # Página de testes
 │
-├── 📄 package.json              # Dependências do projeto
-├── 📄 vite.config.js            # Configuração Vite
-├── 📄 .gitignore                # Arquivos ignorados pelo Git
-├── 📄 README.md                 # Documentação principal
-└── 📄 URLS_TESTE.txt            # URLs para testes (gitignore)
+├── 📂 scripts/                 # Scripts de configuração
+│   ├── setup-mongodb-atlas.ps1 # Configurar MongoDB Atlas
+│   └── start-mongodb-local.ps1 # Iniciar MongoDB local
+│
+├── 📂 server/                  # Backend Node.js
+│   ├── index.js                # Servidor principal
+│   │
+│   ├── controllers/            # Lógica de negócio
+│   │
+│   ├── database/               # Conexão e queries DB
+│   │   ├── configs.js          # Credenciais Action1
+│   │   └── database.js         # MongoDB + Fallback JSON
+│   │
+│   ├── routes/                 # Rotas da API
+│   │
+│   └── utils/                  # Funções auxiliares
+│
+├── 📂 src/                     # Frontend React
+│   ├── main.jsx                # Entry point React
+│   │
+│   ├── components/             # Componentes React
+│   │   ├── App.jsx             # Componente principal
+│   │   └── TestApp.jsx         # Componente de teste
+│   │
+│   ├── data/                   # Dados mockados
+│   │   └── mockdata.jsx
+│   │
+│   ├── services/               # Serviços/APIs
+│   │   └── api.js              # Cliente API
+│   │
+│   └── styles/                 # Estilos CSS
+│       ├── App.css
+│       └── index.css
+│
+└── 📂 tests/                   # Scripts de teste
+    ├── debug-status.js
+    ├── test-api.js
+    ├── test-full-sync.js
+    ├── test-pagination.js
+    ├── test-server.js
+    └── test-sync-v2.js
 ```
 
-## Fluxo de Dados
+## 🎯 Principais Mudanças
 
+### ✅ Organizadas
+- Scripts movidos para `scripts/`
+- Documentação em `docs/`
+- Mockdata em `src/data/`
+- Removido `config/` (vite.config na raiz)
+
+### 📦 Estrutura Limpa
+- Backend: `server/`
+- Frontend: `src/`
+- Dados: `data/` (fallback JSON)
+- Scripts: `scripts/`
+- Docs: `docs/`
+- Testes: `tests/`
+
+## 🚀 Como Usar
+
+### Desenvolvimento
+```bash
+npm start                # Backend + Frontend
+npm run server          # Apenas Backend
+npm run frontend        # Apenas Frontend
 ```
-Action1 API 
-    ↓
-server/index.js (sincronização via cron)
-    ↓
-server/database/database.js (persistência)
-    ↓
-data/inventory.json
-    ↓
-API REST (Express routes)
-    ↓
-src/services/api.js
-    ↓
-src/components/App.jsx (React UI)
+
+### Configuração MongoDB
+```bash
+.\scripts\setup-mongodb-atlas.ps1
 ```
 
-## Scripts Disponíveis
+### Testes
+```bash
+node tests/test-api.js
+```
 
-- `npm start` - Inicia frontend React (porta 5173)
-- `npm run server` - Inicia backend Node.js (porta 3002)
-- `npm run dev` - Inicia desenvolvimento Vite
-- `npm run build` - Build de produção
+## 📋 Arquivos Importantes
 
-## Portas
+| Arquivo | Descrição |
+|---------|-----------|
+| `.env` | Configurações MongoDB (SECRET!) |
+| `server/index.js` | Servidor backend |
+| `src/components/App.jsx` | Dashboard principal |
+| `server/database/database.js` | Conexão MongoDB |
+| `vite.config.js` | Config Vite |
 
-- **Frontend**: http://localhost:5173
-- **Backend**: http://localhost:3002
-- **API**: http://localhost:3002/api
+## 🔒 Segurança
 
-## Padrões de Organização
+**NÃO COMMITAR:**
+- `.env` ← Credenciais MongoDB
+- `node_modules/`
+- `logs/`
+- `data/*.json`
 
-### Backend (server/)
-- `index.js` - Servidor Express principal
-- `database/` - Camada de acesso a dados
-- `routes/` - Definição de rotas (futuro uso)
-- `controllers/` - Lógica de negócio (futuro uso)
-
-### Frontend (src/)
-- `components/` - Componentes React reutilizáveis
-- `services/` - Comunicação com APIs externas
-- `styles/` - Arquivos CSS organizados
-- `main.jsx` - Ponto de entrada da aplicação
-
-### Dados (data/)
-- Arquivos JSON para persistência offline
-- Separado do código fonte
-
-### Testes (tests/)
-- Testes unitários e de integração
-- Scripts de teste da API
-
-Esta estrutura segue as melhores práticas de organização para projetos React + Node.js.
+Tudo já está no `.gitignore`! ✅
