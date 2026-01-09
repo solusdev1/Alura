@@ -8,6 +8,10 @@ param(
     [int]$TimeoutSeconds = 15
 )
 
+# Configurar encoding UTF-8 para suportar caracteres especiais
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
+
 $cacheFolder = Join-Path $env:TEMP "Action1Cache"
 $cacheFile = Join-Path $cacheFolder "$env:COMPUTERNAME.json"
 
@@ -48,11 +52,13 @@ try {
     Write-Host "   Timeout: $TimeoutSeconds segundos" -ForegroundColor Gray
     
     $json = $cached.data | ConvertTo-Json -Depth 3
+    # Converter para bytes UTF-8 para preservar acentos
+    $jsonBytes = [System.Text.Encoding]::UTF8.GetBytes($json)
     $success = $false
     $lastError = $null
     
     try {
-        $response = Invoke-RestMethod -Uri $LocalApiUrl -Method Post -Body $json -ContentType "application/json" -TimeoutSec $TimeoutSeconds
+        $response = Invoke-RestMethod -Uri $LocalApiUrl -Method Post -Body $jsonBytes -ContentType "application/json; charset=utf-8" -TimeoutSec $TimeoutSeconds
         
         if ($response.success) {
             Write-Host "   ✅ SUCESSO no servidor LOCAL!" -ForegroundColor Green
@@ -67,7 +73,7 @@ try {
         Write-Host "   URL: $CloudApiUrl" -ForegroundColor Gray
         
         try {
-            $response = Invoke-RestMethod -Uri $CloudApiUrl -Method Post -Body $json -ContentType "application/json" -TimeoutSec $TimeoutSeconds
+            $response = Invoke-RestMethod -Uri $CloudApiUrl -Method Post -Body $jsonBytes -ContentType "application/json; charset=utf-8" -TimeoutSec $TimeoutSeconds
             
             if ($response.success) {
                 Write-Host "   ✅ SUCESSO no servidor CLOUD!" -ForegroundColor Green

@@ -7,6 +7,10 @@ param(
     [int]$TimeoutSeconds = 15
 )
 
+# Configurar encoding UTF-8 para suportar caracteres especiais em nomes de cidades
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
+
 # ===============================
 # CONFIGURACAO DE CACHE
 # ===============================
@@ -25,7 +29,9 @@ function Send-ToServer {
     param($data, $url, $timeout)
     try {
         $json = $data | ConvertTo-Json -Depth 3
-        $response = Invoke-RestMethod -Uri $url -Method Post -Body $json -ContentType "application/json" -TimeoutSec $timeout
+        # Converter para bytes UTF-8 para preservar caracteres especiais
+        $jsonBytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+        $response = Invoke-RestMethod -Uri $url -Method Post -Body $jsonBytes -ContentType "application/json; charset=utf-8" -TimeoutSec $timeout
         return @{ success = $true; response = $response }
     } catch {
         return @{ success = $false; error = $_.Exception.Message }
@@ -39,7 +45,7 @@ function Save-ToCache {
             timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
             data = $data
         }
-        $cacheData | ConvertTo-Json -Depth 5 | Set-Content -Path $cacheFile -Force
+        $cacheData | ConvertTo-Json -Depth 5 | Set-Content -Path $cacheFile -Force -Encoding UTF8
         Write-Host "   Dados salvos em cache local: $cacheFile" -ForegroundColor Yellow
         return $true
     } catch {
