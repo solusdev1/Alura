@@ -4,17 +4,17 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.MONGODB_DB_NAME || 'action1_inventory';
 
 /**
- * Endpoint para receber Display Name do script PowerShell e salvar no MongoDB
+ * Endpoint para receber Display Name e Cidade do script PowerShell e salvar no MongoDB
  * POST /api/save-display-name
- * Body: { deviceName, displayName, username, hostname }
+ * Body: { deviceName, displayName, username, hostname, city, publicIP }
  */
 export async function saveDisplayName(req, res) {
     try {
         console.log('\n🔄 ========================================');
-        console.log('   SALVANDO DISPLAY NAME NO MONGODB');
+        console.log('   SALVANDO INFORMAÇÕES NO MONGODB');
         console.log('   ========================================\n');
 
-        const { deviceName, displayName, username, hostname } = req.body;
+        const { deviceName, displayName, username, hostname, city, publicIP } = req.body;
 
         // Validar dados recebidos
         if (!deviceName && !hostname) {
@@ -35,6 +35,8 @@ export async function saveDisplayName(req, res) {
         console.log(`   • Device: ${deviceName || hostname}`);
         console.log(`   • Display Name: ${displayName}`);
         console.log(`   • Username: ${username || 'N/A'}`);
+        console.log(`   • Cidade: ${city || 'N/A'}`);
+        console.log(`   • IP Público: ${publicIP || 'N/A'}`);
 
         // Conectar ao MongoDB
         const client = new MongoClient(MONGODB_URI);
@@ -66,22 +68,33 @@ export async function saveDisplayName(req, res) {
 
         console.log(`✅ Dispositivo encontrado: ${device.nome}`);
 
-        // Atualizar adDisplayName
+        // Atualizar adDisplayName e cidade
+        const updateFields = { 
+            adDisplayName: displayName,
+            updatedAt: new Date()
+        };
+        
+        // Adicionar cidade se fornecida
+        if (city) {
+            updateFields.city = city;
+        }
+        
+        // Adicionar IP público se fornecido
+        if (publicIP) {
+            updateFields.lastPublicIP = publicIP;
+        }
+        
         const result = await collection.updateOne(
             { _id: device._id },
-            { 
-                $set: { 
-                    adDisplayName: displayName,
-                    updatedAt: new Date()
-                } 
-            }
+            { $set: updateFields }
         );
 
         await client.close();
 
         if (result.modifiedCount > 0) {
-            console.log('✅ Display Name salvo com sucesso no MongoDB!');
-            console.log(`   • ${device.nome} → ${displayName}`);
+            console.log('✅ Informações salvas com sucesso no MongoDB!');
+            console.log(`   • ${device.nome} → Display Name: ${displayName}`);
+            if (city) console.log(`   • Cidade: ${city}`);
             
             console.log('\n✅ ========================================');
             console.log('   ATUALIZAÇÃO CONCLUÍDA!');
@@ -91,7 +104,8 @@ export async function saveDisplayName(req, res) {
                 success: true,
                 deviceName: device.nome,
                 displayName,
-                message: 'Display Name salvo com sucesso no MongoDB!'
+                city: city || device.city || 'N/A',
+                message: 'Informações salvas com sucesso no MongoDB!'
             });
         } else {
             console.log('⚠️ Nenhuma alteração realizada (valor já era o mesmo)');

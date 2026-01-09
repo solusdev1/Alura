@@ -1,4 +1,4 @@
-# Script PowerShell para capturar AD Display Name e salvar no MongoDB via API local
+# Script PowerShell para capturar AD Display Name, Cidade e salvar no MongoDB via API local
 # Executa de forma rapida e confiavel
 
 param(
@@ -6,8 +6,35 @@ param(
     [int]$TimeoutSeconds = 10
 )
 
+# ===============================
+# FUNCOES AUXILIARES
+# ===============================
+
+function Get-PublicIP {
+    try {
+        $response = Invoke-RestMethod "https://api.ipify.org?format=json" -TimeoutSec 5
+        return $response.ip
+    } catch {
+        return $null
+    }
+}
+
+function Get-CityFromIP {
+    param ($ip)
+    try {
+        $geo = Invoke-RestMethod "https://ipinfo.io/$ip/json" -TimeoutSec 5
+        return $geo.city
+    } catch {
+        return $null
+    }
+}
+
+# ===============================
+# INICIO DO SCRIPT
+# ===============================
+
 try {
-    Write-Host "Iniciando captura de Display Name do AD..." -ForegroundColor Cyan
+    Write-Host "Iniciando captura de informacoes do dispositivo..." -ForegroundColor Cyan
     
     # 1 - Obter informacoes do dispositivo
     $hostname = $env:COMPUTERNAME
@@ -64,12 +91,32 @@ try {
         Write-Host "Usando username como fallback" -ForegroundColor Cyan
     }
     
+    # 3 - Detectar cidade baseada no IP publico
+    Write-Host "`nDetectando localizacao..." -ForegroundColor Cyan
+    
+    $city = "Desconhecida"
+    $publicIP = Get-PublicIP
+    
+    if ($publicIP) {
+        Write-Host "   IP Publico: $publicIP" -ForegroundColor White
+        $detectedCity = Get-CityFromIP $publicIP
+        if ($detectedCity) {
+            $city = $detectedCity
+            Write-Host "   Cidade detectada: $city" -ForegroundColor Green
+        } else {
+            Write-Host "   Cidade nao detectada, usando padrao" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "   Nao foi possivel obter IP publico" -ForegroundColor Yellow
+    }
+    
     Write-Host "`nInformacoes coletadas!" -ForegroundColor Green
     Write-Host "   Dispositivo: $fqdn" -ForegroundColor White
     Write-Host "   Display Name: $displayName" -ForegroundColor White
     Write-Host "   Username: $currentUser" -ForegroundColor White
+    Write-Host "   Cidade: $city" -ForegroundColor White
     
-    # 3 - Enviar para API local (MongoDB)
+    # 4 - Enviar para API local (MongoDB)
     Write-Host "`nSalvando no servidor local..." -ForegroundColor Cyan
     
     $body = @{
@@ -78,26 +125,39 @@ try {
         displayName = $displayName
         username = $currentUser
         domain = $userDomain
+        city = $city
+        publicIP = $publicIP
     } | ConvertTo-Json
     
     try {
         $response = Invoke-RestMethod -Uri $ApiUrl -Method Post -Body $body -ContentType "application/json" -TimeoutSec $TimeoutSeconds
         
         if ($response.success) {
-            Write-Host "SUCESSO! Display Name salvo no servidor!" -ForegroundColor Green
+            Write-Host "SUCESSO! Informacoes salvas no servidor!" -ForegroundColor Green
             Write-Host "   Dispositivo: $($response.deviceName)" -ForegroundColor White
             Write-Host "   Display Name: $($response.displayName)" -ForegroundColor White
         } else {
             Write-Host "Erro: $($response.error)" -ForegroundColor Yellow
         }
         
-        # Retornar JSON de sucesso
+        # Retornar JSON de sucesso com Custom Attributes para Action1
         $finalResult = @{
             success = $true
             deviceName = $fqdn
             displayName = $displayName
+            city = $city
             saved = $response.success
-        } | ConvertTo-Json
+            customAttributes = @(
+                @{
+                    name = "AD Display Name"
+                    value = $displayName
+                }
+                @{
+                    name = "City"
+                    value = $city
+                }
+            )
+        } | ConvertTo-Json -Depth 3
         
         Write-Output $finalResult
         
@@ -105,14 +165,25 @@ try {
         Write-Host "Erro ao conectar com servidor: $($_.Exception.Message)" -ForegroundColor Yellow
         Write-Host "Os dados foram coletados mas nao salvos" -ForegroundColor Cyan
         
-        # Retornar JSON mesmo com erro de conexao
+        # Retornar JSON mesmo com erro de conexao (com Custom Attributes)
         $fallbackResult = @{
             success = $true
             deviceName = $fqdn
             displayName = $displayName
+            city = $city
             saved = $false
             error = "Servidor inacessivel"
-        } | ConvertTo-Json
+            customAttributes = @(
+                @{
+                    name = "AD Display Name"
+                    value = $displayName
+                }
+                @{
+                    name = "City"
+                    value = $city
+                }
+            )
+        } | ConvertTo-Json -Depth 3
         
         Write-Output $fallbackResult
     }
