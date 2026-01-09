@@ -2,7 +2,7 @@
 # Executa de forma rapida e confiavel
 
 param(
-    [string]$ApiUrl = "http://172.16.2.181:3002/api/save-display-name",
+    [string]$ApiUrl = "http://172.16.2.176:3002/api/save-display-name",
     [int]$TimeoutSeconds = 10
 )
 
