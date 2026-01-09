@@ -182,13 +182,28 @@ async function syncEndpoints() {
         // 4️⃣ PROCESSAR E SALVAR
         console.log('💾 Processando e salvando no banco de dados...');
         
+        // Debug: Verificar custom attributes de alguns dispositivos
+        console.log('\n🔍 Analisando Custom Attributes (primeiros 3 dispositivos):');
+        todosOsEndpoints.slice(0, 3).forEach((dev, idx) => {
+            const custom = dev.custom || [];
+            console.log(`\n   Dispositivo ${idx + 1}: ${dev.name || dev.hostname}`);
+            console.log(`   Total Custom Attributes: ${custom.length}`);
+            const cityAttr = custom.find(c => c.name === 'City' || c.name === 'Custom Attribute 1');
+            const adAttr = custom.find(c => c.name === 'AD Display Name');
+            if (cityAttr) console.log(`   ✅ City encontrado: "${cityAttr.name}" = "${cityAttr.value}"`);
+            else console.log(`   ❌ City não encontrado`);
+            if (adAttr) console.log(`   ✅ AD Display Name: "${adAttr.value}"`);
+        });
+        console.log('\n');
+        
         const dispositivosProcessados = todosOsEndpoints.map(dev => {
             const hw = dev.hardware_summary || {};
             const inv = dev.inventory || {};
             
-            // Extrair AD Display Name do custom attribute
+            // Extrair AD Display Name e City do custom attribute
             const custom = dev.custom || [];
             const adDisplayName = custom.find(c => c.name === 'AD Display Name')?.value || '';
+            const city = custom.find(c => c.name === 'City')?.value || '';
             
             const getRAM = () =>
                 dev.memory_total ??
@@ -242,6 +257,7 @@ async function syncEndpoints() {
                 tipo: tipoDispositivo,
                 usuario: (dev.user || dev.last_logged_in_user || 'N/A').replace(/\\/g, '/'),
                 adDisplayName,
+                city,
                 gerenciado: dev.managed ? 'Sim' : 'Não',
                 last_seen: dev.last_seen || 'N/A',
                 agent_version: dev.agent_version || 'N/A',

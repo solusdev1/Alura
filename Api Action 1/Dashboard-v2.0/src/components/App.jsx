@@ -182,7 +182,8 @@ function App() { // Componente principal da aplicação
       device.usuario?.toLowerCase().includes(busca.toLowerCase()) ||
       device.adDisplayName?.toLowerCase().includes(busca.toLowerCase()) ||
       device.ip?.toLowerCase().includes(busca.toLowerCase()) ||
-      device.organizacao?.toLowerCase().includes(busca.toLowerCase())
+      device.organizacao?.toLowerCase().includes(busca.toLowerCase()) ||
+      device.city?.toLowerCase().includes(busca.toLowerCase())
     return matchTipo && matchStatus && matchBusca
   }).sort((a, b) => {
     let valorA, valorB;
@@ -205,8 +206,8 @@ function App() { // Componente principal da aplicação
         valorB = b.status || '';
         break;
       case 'localizacao':
-        valorA = a.organizacao || '';
-        valorB = b.organizacao || '';
+        valorA = a.city || a.organizacao || '';
+        valorB = b.city || b.organizacao || '';
         break;
       case 'data':
         valorA = a.last_seen ? new Date(a.last_seen).getTime() : 0;
@@ -412,7 +413,7 @@ function App() { // Componente principal da aplicação
                         {device.status === 'Online' ? '✓ Em Uso' : device.status === 'Offline' ? '○ Offline' : device.status || 'N/A'}
                       </span>
                     </td>
-                    <td>{device.organizacao || 'N/A'}</td>
+                    <td>{device.city || device.organizacao || 'N/A'}</td>
                   </tr>
                 ))}
               </tbody>

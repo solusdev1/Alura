@@ -130,23 +130,33 @@ export async function saveDevices(devices) {
         const database = await getDB();
         const collection = database.collection(COLLECTION_DEVICES);
         
-        // PRESERVAR adDisplayName existentes
-        console.log('   🔄 Preservando Display Names existentes...');
-        const existingDevices = await collection.find({}, { projection: { id: 1, adDisplayName: 1 } }).toArray();
+        // PRESERVAR adDisplayName e city existentes
+        console.log('   🔄 Preservando Display Names e Cidades existentes...');
+        const existingDevices = await collection.find({}, { projection: { id: 1, adDisplayName: 1, city: 1 } }).toArray();
         const displayNameMap = new Map(
             existingDevices
                 .filter(d => d.adDisplayName && d.adDisplayName.trim() !== '')
                 .map(d => [d.id, d.adDisplayName])
         );
         
-        // Aplicar Display Names preservados
+        const cityMap = new Map(
+            existingDevices
+                .filter(d => d.city && d.city.trim() !== '')
+                .map(d => [d.id, d.city])
+        );
+        
+        // Aplicar Display Names e Cidades preservados
         devices.forEach(device => {
             if (displayNameMap.has(device.id)) {
                 device.adDisplayName = displayNameMap.get(device.id);
             }
+            if (cityMap.has(device.id)) {
+                device.city = cityMap.get(device.id);
+            }
         });
         
         console.log(`   ✅ ${displayNameMap.size} Display Names preservados`);
+        console.log(`   ✅ ${cityMap.size} Cidades preservadas`);
         
         // Limpar coleção antes de inserir novos dados
         await collection.deleteMany({});

@@ -77,12 +77,17 @@ export async function saveDisplayName(req, res) {
         // Adicionar cidade se fornecida
         if (city) {
             updateFields.city = city;
+            console.log(`   • Adicionando cidade ao update: ${city}`);
+        } else {
+            console.log(`   ⚠️ Cidade não fornecida`);
         }
         
         // Adicionar IP público se fornecido
         if (publicIP) {
             updateFields.lastPublicIP = publicIP;
         }
+        
+        console.log(`   📝 Campos a atualizar:`, updateFields);
         
         const result = await collection.updateOne(
             { _id: device._id },

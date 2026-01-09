@@ -1,10 +1,10 @@
-# Script PowerShell para capturar AD Display Name, Cidade e salvar no MongoDB via API local
-# Executa de forma rapida e confiavel
-# Sistema de cache local para quando servidor estiver offline
+# Script PowerShell para dispositivos REMOTOS (outras filiais/redes)
+# Salva dados diretamente no MongoDB Atlas via Vercel (público)
+# NÃO depende do servidor local 172.16.0.176
 
 param(
-    [string]$ApiUrl = "http://172.16.0.176:3002/api/save-display-name",
-    [int]$TimeoutSeconds = 10
+    [string]$ApiUrl = "https://inventario-two-gamma.vercel.app/api/save-remote",
+    [int]$TimeoutSeconds = 15
 )
 
 # ===============================
@@ -92,7 +92,7 @@ function Get-CityFromIP {
 # ===============================
 
 try {
-    Write-Host "Iniciando captura de informacoes do dispositivo..." -ForegroundColor Cyan
+    Write-Host "Iniciando captura de informacoes do dispositivo (REMOTO)..." -ForegroundColor Cyan
     
     # 0 - Tentar enviar dados pendentes do cache
     Write-Host "`nVerificando cache pendente..." -ForegroundColor Cyan
@@ -178,8 +178,9 @@ try {
     Write-Host "   Username: $currentUser" -ForegroundColor White
     Write-Host "   Cidade: $city" -ForegroundColor White
     
-    # 4 - Enviar para API local (MongoDB)
-    Write-Host "`nSalvando no servidor local..." -ForegroundColor Cyan
+    # 4 - Enviar para API Cloud (Vercel + MongoDB Atlas)
+    Write-Host "`nSalvando na nuvem (Vercel)..." -ForegroundColor Cyan
+    Write-Host "   URL: $ApiUrl" -ForegroundColor Gray
     
     $dataToSend = @{
         deviceName = $fqdn
@@ -196,7 +197,7 @@ try {
     if ($sendResult.success) {
         $response = $sendResult.response
         
-        Write-Host "SUCESSO! Informacoes salvas no servidor!" -ForegroundColor Green
+        Write-Host "SUCESSO! Informacoes salvas na nuvem!" -ForegroundColor Green
         Write-Host "   Dispositivo: $($response.deviceName)" -ForegroundColor White
         Write-Host "   Display Name: $($response.displayName)" -ForegroundColor White
         
@@ -207,6 +208,7 @@ try {
             displayName = $displayName
             city = $city
             saved = $true
+            location = "Cloud (Vercel)"
             customAttributes = @(
                 @{
                     name = "AD Display Name"
@@ -222,7 +224,7 @@ try {
         Write-Output $finalResult
         
     } else {
-        Write-Host "Erro ao conectar com servidor: $($sendResult.error)" -ForegroundColor Yellow
+        Write-Host "Erro ao conectar com servidor cloud: $($sendResult.error)" -ForegroundColor Yellow
         Write-Host "Salvando dados em cache local..." -ForegroundColor Cyan
         
         $cached = Save-ToCache -data $dataToSend
@@ -235,7 +237,7 @@ try {
             city = $city
             saved = $false
             cached = $cached
-            error = "Servidor inacessivel - dados em cache"
+            error = "Servidor cloud inacessivel - dados em cache"
             customAttributes = @(
                 @{
                     name = "AD Display Name"
