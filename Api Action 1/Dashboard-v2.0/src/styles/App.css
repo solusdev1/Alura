@@ -2,6 +2,7 @@
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .App-header {
@@ -10,13 +11,48 @@
   margin: 0 auto;
 }
 
+.header-title-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
 .App-header h1 {
   font-size: 2em;
   line-height: 1.1;
   color: #333;
-  margin-bottom: 1rem;
+  margin: 0;
   font-weight: 600;
   text-align: center;
+}
+
+.dark-mode-toggle {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 1.5em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  right: 0;
+}
+
+.dark-mode-toggle:hover {
+  transform: scale(1.1) rotate(10deg);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode-toggle:active {
+  transform: scale(0.95);
 }
 
 .header-content {
@@ -438,3 +474,173 @@
 .device-card.offline h3 {
   color: #ef4444;
 }
+
+/* Dark Mode Styles */
+body.dark-mode {
+  background-color: #1a1a2e;
+  color: #eaeaea;
+}
+
+body.dark-mode .App {
+  background-color: #1a1a2e;
+}
+
+body.dark-mode .App-header h1 {
+  color: #eaeaea;
+}
+
+body.dark-mode .header-resize-handle,
+body.dark-mode .height-resize-handle {
+  background: linear-gradient(to bottom, #2d3748, #1a202c);
+  border-color: #4a5568;
+}
+
+body.dark-mode .header-resize-handle:hover,
+body.dark-mode .height-resize-handle:hover {
+  background: linear-gradient(to bottom, #4a5568, #2d3748);
+}
+
+body.dark-mode .status-badge.running {
+  background-color: #10b981;
+  color: #000;
+}
+
+body.dark-mode .status-badge.offline {
+  background-color: #dc2626;
+  color: #fff;
+}
+
+body.dark-mode .db-badge {
+  background-color: #2563eb;
+  color: #fff;
+}
+
+body.dark-mode .last-update {
+  color: #a0aec0;
+}
+
+body.dark-mode .stats-bar {
+  background: linear-gradient(to right, #2d3748, #1a202c);
+}
+
+body.dark-mode .stat-label {
+  color: #a0aec0;
+}
+
+body.dark-mode .stat-value {
+  color: #eaeaea;
+}
+
+body.dark-mode .search-input,
+body.dark-mode .filter-group select {
+  background-color: #2d3748;
+  color: #eaeaea;
+  border-color: #4a5568;
+}
+
+body.dark-mode .search-input:focus,
+body.dark-mode .filter-group select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+body.dark-mode .filter-group select:hover {
+  border-color: #667eea;
+}
+
+body.dark-mode .btn-export {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+body.dark-mode .btn-export:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+body.dark-mode .results-info {
+  color: #a0aec0;
+}
+
+body.dark-mode .table-container {
+  border-color: #4a5568;
+}
+
+body.dark-mode .inventory-table {
+  background: #2d3748;
+}
+
+body.dark-mode .inventory-table thead {
+  background-color: #1a202c;
+  border-bottom-color: #4a5568;
+}
+
+body.dark-mode .inventory-table th {
+  color: #eaeaea;
+}
+
+body.dark-mode .inventory-table th:hover {
+  background-color: #2d3748;
+}
+
+body.dark-mode .inventory-table tbody tr {
+  border-bottom-color: #4a5568;
+}
+
+body.dark-mode .inventory-table tbody tr:hover {
+  background-color: #374151;
+}
+
+body.dark-mode .inventory-table tbody tr.online {
+  background-color: #064e3b;
+}
+
+body.dark-mode .inventory-table tbody tr.offline {
+  background-color: #7f1d1d;
+}
+
+body.dark-mode .inventory-table td {
+  color: #cbd5e0;
+}
+
+body.dark-mode .badge-tipo {
+  background-color: #1e3a8a;
+  color: #93c5fd;
+}
+
+body.dark-mode .badge-status.online {
+  background-color: #065f46;
+  color: #6ee7b7;
+}
+
+body.dark-mode .badge-status.offline {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+body.dark-mode .description {
+  color: #a0aec0;
+}
+
+body.dark-mode .device-name {
+  color: #60a5fa;
+}
+
+body.dark-mode .email-col,
+body.dark-mode .date-col {
+  color: #a0aec0;
+}
+
+body.dark-mode .error {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+  border-left-color: #dc2626;
+}
+
+body.dark-mode .loading,
+body.dark-mode .empty-message {
+  color: #a0aec0;
+}
+
+body.dark-mode .resize-indicator {
+  color: #a0aec0;
+}
+

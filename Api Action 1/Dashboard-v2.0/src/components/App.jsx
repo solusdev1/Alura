@@ -26,6 +26,10 @@ function App() { // Componente principal da aplicação
   const [isResizingHeight, setIsResizingHeight] = useState(false)
   const [headerHeight, setHeaderHeight] = useState(null)
   const [isResizingHeader, setIsResizingHeader] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode')
+    return saved === 'true'
+  })
 
   const handleOrdenar = (campo) => { // Função para ordenar por coluna
     setOrdenacao(prev => ({
@@ -173,6 +177,19 @@ function App() { // Componente principal da aplicação
     carregarDados()
   }, [])
 
+  useEffect(() => { // Aplicar dark mode
+    if (darkMode) {
+      document.body.classList.add('dark-mode')
+    } else {
+      document.body.classList.remove('dark-mode')
+    }
+    localStorage.setItem('darkMode', darkMode)
+  }, [darkMode])
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode)
+  }
+
   // Filtrar dispositivos
   const dispositivosFiltrados = dispositivos.filter(device => { // Função para filtrar dispositivos
     const matchTipo = filtroTipo === 'Todos' || device.tipo === filtroTipo
@@ -256,7 +273,16 @@ function App() { // Componente principal da aplicação
   return (
     <div className="App">
       <header className="App-header">
-        <h1>📊 Inventário TI</h1>
+        <div className="header-title-row">
+          <h1>📊 Inventário TI</h1>
+          <button 
+            onClick={toggleDarkMode} 
+            className="dark-mode-toggle"
+            title={darkMode ? "Ativar modo claro" : "Ativar modo noturno"}
+          >
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+        </div>
         
         <div className="header-content" style={headerHeight ? {height: headerHeight, overflow: 'auto'} : {}}>
         <div className="server-info">
