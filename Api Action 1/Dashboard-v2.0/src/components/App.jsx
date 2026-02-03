@@ -344,6 +344,7 @@ function App() { // Componente principal da aplicação
     <div className="App">
       <header className="App-header">
         <div className="header-title-row">
+          <img src="/assets/logocarraro.png" alt="Carraro" className="company-logo" />
           <h1>📊 Inventário TI</h1>
           <button 
             onClick={toggleDarkMode} 
