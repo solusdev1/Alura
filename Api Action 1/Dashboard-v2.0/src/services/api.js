@@ -60,3 +60,18 @@ export async function clearInventory() {
 
     return await response.json();
 }
+
+export async function deleteInventoryByIds(ids) {
+    const response = await fetch(`${SERVER_URL}/api/inventory/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao excluir dispositivos');
+    }
+
+    return await response.json();
+}

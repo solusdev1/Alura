@@ -98,6 +98,35 @@ export default async function handler(req, res) {
             return res.status(200).json({ data: devices });
         }
 
+        // Inventory delete by IDs
+        if (req.method === 'POST' && cleanPath.includes('/inventory/delete')) {
+            let body = req.body;
+            if (typeof body === 'string') {
+                try { body = JSON.parse(body); } catch { body = {}; }
+            }
+            const ids = body?.ids;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ error: 'Lista de IDs inválida' });
+            }
+
+            const db = await connectDB();
+            const result = await db.collection('devices').deleteMany({ id: { $in: ids } });
+
+            await db.collection('metadata').updateOne(
+                { _id: 'sync_info' },
+                {
+                    $set: {
+                        last_sync: new Date().toISOString(),
+                        total_devices: await db.collection('devices').countDocuments(),
+                        status: 'manual_delete'
+                    }
+                },
+                { upsert: true }
+            );
+
+            return res.status(200).json({ success: true, deleted: result.deletedCount || 0 });
+        }
+
         // Inventory endpoint
         if (cleanPath.includes('/inventory')) {
             const db = await connectDB();

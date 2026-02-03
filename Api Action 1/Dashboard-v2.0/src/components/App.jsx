@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import '../styles/App.css'
-import { getInventory, syncInventory, getServerStatus } from '../services/api.js'
+import { getInventory, syncInventory, getServerStatus, deleteInventoryByIds } from '../services/api.js'
 
 function App() { // Componente principal da aplicação
   const [dispositivos, setDispositivos] = useState([])
@@ -12,7 +12,10 @@ function App() { // Componente principal da aplicação
   const [filtroStatus, setFiltroStatus] = useState('Todos')
   const [busca, setBusca] = useState('')
   const [ordenacao, setOrdenacao] = useState({ campo: 'tipo', direcao: 'asc' })
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [selectedDevice, setSelectedDevice] = useState(null)
   const [columnWidths, setColumnWidths] = useState({
+    select: 50,
     tipo: 120,
     responsavel: 150,
     email: 250,
@@ -143,6 +146,7 @@ function App() { // Componente principal da aplicação
       // Buscar dados do servidor local
       const dados = await getInventory()
       setDispositivos(dados)
+      setSelectedIds(new Set())
       await verificarServidor()
     } catch (err) {
       setError(err.message)
@@ -246,6 +250,63 @@ function App() { // Componente principal da aplicação
     }
   })
 
+  const isAllVisibleSelected = dispositivosFiltrados.length > 0 &&
+    dispositivosFiltrados.every(d => selectedIds.has(d.id))
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleSelectAllVisible = () => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (isAllVisibleSelected) {
+        dispositivosFiltrados.forEach(d => next.delete(d.id))
+      } else {
+        dispositivosFiltrados.forEach(d => next.add(d.id))
+      }
+      return next
+    })
+  }
+
+  const limparSelecao = () => setSelectedIds(new Set())
+
+  const excluirSelecionados = async () => {
+    if (selectedIds.size === 0) return
+    const quantidade = selectedIds.size
+    const ok = window.confirm(`Excluir ${quantidade} dispositivo(s) do dashboard? Essa ação não pode ser desfeita.`)
+    if (!ok) return
+
+    setLoading(true)
+    setError(null)
+    try {
+      const ids = Array.from(selectedIds)
+      await deleteInventoryByIds(ids)
+      setDispositivos(prev => prev.filter(d => !selectedIds.has(d.id)))
+      limparSelecao()
+    } catch (err) {
+      setError(`Erro ao excluir: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const abrirDetalhes = (device) => {
+    setSelectedDevice(device)
+  }
+
+  const fecharDetalhes = () => {
+    setSelectedDevice(null)
+  }
+
   // Obter tipos únicos
   const tiposUnicos = ['Todos', ...new Set(dispositivos.map(d => d.tipo).filter(Boolean))]
   
@@ -268,6 +329,15 @@ function App() { // Componente principal da aplicação
   // Exportar para CSV
   const exportarCSV = () => {
     window.open('http://localhost:3002/api/export/csv', '_blank')
+  }
+
+  const obterEmail = (device) => {
+    if (!device?.usuario) return 'N/A'
+    return `${device.usuario.toLowerCase().replace(/\\/g, '').replace(/\s/g, '.').replace(/carrarolog/g, '')}@carrarologistica.com.br`
+  }
+
+  const obterCloud = (device) => {
+    return device?.cloudEmail || device?.cloud || 'N/A'
   }
 
   return (
@@ -366,11 +436,25 @@ function App() { // Componente principal da aplicação
             <button onClick={exportarCSV} className="btn-export" title="Exportar para CSV">
               📥 Exportar CSV
             </button>
+          
+          {selectedIds.size > 0 && (
+            <div className="filter-group">
+              <button 
+                onClick={excluirSelecionados} 
+                className="btn-delete" 
+                title="Excluir selecionados"
+                disabled={loading}
+              >
+                Excluir ({selectedIds.size})
+              </button>
+            </div>
+          )}
           </div>
         </div>
 
         <div className="results-info">
           Mostrando {dispositivosFiltrados.length} de {totalDispositivos} dispositivos
+          {selectedIds.size > 0 && ` â€¢ Selecionados: ${selectedIds.size}`}
         </div>
         </div>
 
@@ -386,6 +470,15 @@ function App() { // Componente principal da aplicação
               <table className="inventory-table">
               <thead>
                 <tr>
+                    <th style={{width: columnWidths.select, position: 'relative'}}>
+                      <input
+                        type="checkbox"
+                        checked={isAllVisibleSelected}
+                        onChange={toggleSelectAllVisible}
+                        title="Selecionar todos"
+                      />
+                      <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'select')} />
+                    </th>
                   <th style={{width: columnWidths.tipo, position: 'relative'}}>
                     <div onClick={() => handleOrdenar('tipo')} style={{cursor: 'pointer', paddingRight: '10px'}}>
                       Tipo {ordenacao.campo === 'tipo' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
@@ -428,10 +521,23 @@ function App() { // Componente principal da aplicação
               </thead>
               <tbody> 
                 {dispositivosFiltrados.map((device) => (
-                  <tr key={device.id} className={device.status?.toLowerCase()}>
+                  <tr 
+                    key={device.id} 
+                    className={`${device.status?.toLowerCase()} ${selectedIds.has(device.id) ? 'selected' : ''}`}
+                    onClick={() => abrirDetalhes(device)}
+                  >
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(device.id)}
+                        onChange={() => toggleSelect(device.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        title="Selecionar linha"
+                      />
+                    </td>
                     <td><span className="badge-tipo">{device.tipo || 'N/A'}</span></td>
                     <td>{device.adDisplayName || device.usuario || 'N/A'}</td>
-                    <td className="email-col">{device.usuario ? `${device.usuario.toLowerCase().replace(/\\/g, '').replace(/\s/g, '.').replace(/carrarolog/g, '')}@carrarologistica.com.br` : 'N/A'}</td>
+                    <td className="email-col">{obterEmail(device)}</td>
                     <td className="device-name">{device.nome || 'N/A'}</td>
                     <td className="description">{formatarDescricao(device)}</td>
                     <td>
@@ -453,6 +559,29 @@ function App() { // Componente principal da aplicação
 
         {dispositivos.length === 0 && !loading && (
           <p className="empty-message">Nenhum dispositivo encontrado. Clique em "Atualizar do Action1" para sincronizar.</p>
+        )}
+
+        {selectedDevice && (
+          <div className="modal-overlay" onClick={fecharDetalhes}>
+            <div className="detail-card" onClick={(e) => e.stopPropagation()}>
+              <div className="detail-card-header">
+                <h2>Detalhes do Equipamento</h2>
+                <button className="detail-close" onClick={fecharDetalhes} aria-label="Fechar">
+                  X
+                </button>
+              </div>
+              <div className="detail-card-body">
+                <div className="detail-row"><span className="detail-label">Tipo:</span> {selectedDevice.tipo || 'N/A'}</div>
+                <div className="detail-row"><span className="detail-label">Responsavel:</span> {selectedDevice.adDisplayName || selectedDevice.usuario || 'N/A'}</div>
+                <div className="detail-row"><span className="detail-label">Email:</span> {obterEmail(selectedDevice)}</div>
+                <div className="detail-row"><span className="detail-label">Cloud:</span> {obterCloud(selectedDevice)}</div>
+                <div className="detail-row"><span className="detail-label">Descricao:</span> {formatarDescricao(selectedDevice)}</div>
+                <div className="detail-row"><span className="detail-label">Localizacao Fisica:</span> {selectedDevice.city || selectedDevice.organizacao || 'N/A'}</div>
+                <div className="detail-row"><span className="detail-label">Obs adicional:</span> {selectedDevice.dispositivo || selectedDevice.hostname || selectedDevice.nome || 'N/A'}</div>
+                <div className="detail-row"><span className="detail-label">Numero serie:</span> {selectedDevice.serial || 'N/A'}</div>
+              </div>
+            </div>
+          </div>
         )}
       </header>
     </div>

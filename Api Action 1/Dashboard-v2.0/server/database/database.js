@@ -313,6 +313,62 @@ export async function clearInventory() {
 }
 
 /**
+ * Remover dispositivos por IDs
+ */
+export async function deleteDevicesByIds(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return { deletedCount: 0 };
+    }
+
+    if (useJSON) {
+        try {
+            const data = fs.readFileSync(DB_PATH, 'utf-8');
+            const devices = JSON.parse(data);
+            const beforeCount = devices.length;
+            const idsSet = new Set(ids);
+            const remaining = devices.filter(d => !idsSet.has(d.id));
+            fs.writeFileSync(DB_PATH, JSON.stringify(remaining, null, 2));
+
+            const metadata = {
+                last_sync: new Date().toISOString(),
+                total_devices: remaining.length,
+                status: 'manual_delete'
+            };
+            fs.writeFileSync(METADATA_PATH, JSON.stringify(metadata, null, 2));
+
+            return { deletedCount: beforeCount - remaining.length };
+        } catch (error) {
+            console.error('❌ Erro ao remover dispositivos (JSON):', error.message);
+            return { deletedCount: 0 };
+        }
+    }
+    
+    try {
+        const database = await getDB();
+        const collection = database.collection(COLLECTION_DEVICES);
+
+        const result = await collection.deleteMany({ id: { $in: ids } });
+
+        await database.collection(COLLECTION_METADATA).updateOne(
+            { _id: 'sync_info' },
+            {
+                $set: {
+                    last_sync: new Date().toISOString(),
+                    total_devices: await collection.countDocuments(),
+                    status: 'manual_delete'
+                }
+            },
+            { upsert: true }
+        );
+
+        return { deletedCount: result.deletedCount || 0 };
+    } catch (error) {
+        console.error('❌ Erro ao remover dispositivos:', error.message);
+        return { deletedCount: 0 };
+    }
+}
+
+/**
  * Obter estatísticas do inventário
  */
 export async function getStats() {

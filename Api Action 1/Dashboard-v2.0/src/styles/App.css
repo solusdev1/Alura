@@ -1,4 +1,4 @@
-.App {
+﻿.App {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
@@ -245,6 +245,34 @@
   transform: translateY(0);
 }
 
+.btn-delete {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95em;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+}
+
+.btn-delete:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.btn-delete:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .results-info {
   text-align: center;
   color: #666;
@@ -347,13 +375,14 @@
   background-color: #007bff;
 }
 
-.inventory-table th:nth-child(1) { min-width: 80px; } /* Tipo */
-.inventory-table th:nth-child(2) { min-width: 120px; } /* Responsável */
-.inventory-table th:nth-child(3) { min-width: 180px; } /* Email */
-.inventory-table th:nth-child(4) { min-width: 140px; } /* Nome */
-.inventory-table th:nth-child(5) { min-width: 200px; } /* Descrição */
-.inventory-table th:nth-child(6) { min-width: 90px; } /* Status */
-.inventory-table th:nth-child(7) { min-width: 100px; } /* Localização */
+.inventory-table th:nth-child(1) { min-width: 50px; } /* Selecao */
+.inventory-table th:nth-child(2) { min-width: 80px; } /* Tipo */
+.inventory-table th:nth-child(3) { min-width: 120px; } /* Responsavel */
+.inventory-table th:nth-child(4) { min-width: 180px; } /* Email */
+.inventory-table th:nth-child(5) { min-width: 140px; } /* Nome */
+.inventory-table th:nth-child(6) { min-width: 200px; } /* Descricao */
+.inventory-table th:nth-child(7) { min-width: 90px; } /* Status */
+.inventory-table th:nth-child(8) { min-width: 100px; } /* Localizacao */
 
 .inventory-table tbody tr {
   border-bottom: 1px solid #e9ecef;
@@ -370,6 +399,10 @@
 
 .inventory-table tbody tr.offline {
   background-color: #fef2f2;
+}
+
+.inventory-table tbody tr.selected {
+  background-color: #dbeafe;
 }
 
 .inventory-table td {
@@ -466,6 +499,64 @@
   color: #666;
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 1.5rem;
+}
+
+.detail-card {
+  width: 100%;
+  max-width: 640px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.detail-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-card-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.detail-close {
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.detail-card-body {
+  padding: 1rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail-row {
+  color: #333;
+  line-height: 1.4;
+}
+
+.detail-label {
+  font-weight: 700;
+}
+
 .device-card.offline {
   border-color: #ef4444;
   opacity: 0.85;
@@ -556,6 +647,14 @@ body.dark-mode .btn-export:hover {
   background: linear-gradient(135deg, #059669, #047857);
 }
 
+body.dark-mode .btn-delete {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+body.dark-mode .btn-delete:hover:not(:disabled) {
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+}
+
 body.dark-mode .results-info {
   color: #a0aec0;
 }
@@ -595,6 +694,10 @@ body.dark-mode .inventory-table tbody tr.online {
 
 body.dark-mode .inventory-table tbody tr.offline {
   background-color: #7f1d1d;
+}
+
+body.dark-mode .inventory-table tbody tr.selected {
+  background-color: #1e3a8a;
 }
 
 body.dark-mode .inventory-table td {
@@ -638,6 +741,26 @@ body.dark-mode .error {
 body.dark-mode .loading,
 body.dark-mode .empty-message {
   color: #a0aec0;
+}
+
+body.dark-mode .detail-card {
+  background: #1f2937;
+}
+
+body.dark-mode .detail-card-header {
+  border-bottom-color: #374151;
+}
+
+body.dark-mode .detail-card-header h2 {
+  color: #eaeaea;
+}
+
+body.dark-mode .detail-close {
+  color: #cbd5e0;
+}
+
+body.dark-mode .detail-row {
+  color: #e2e8f0;
 }
 
 body.dark-mode .resize-indicator {

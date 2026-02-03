@@ -18,7 +18,8 @@ import {
     clearInventory,
     getStats,
     updateSyncStatus,
-    closeDB
+    closeDB,
+    deleteDevicesByIds
 } from './database/database.js';
 
 import { updateDisplayName } from './routes/update-display-name.js';
@@ -463,6 +464,32 @@ app.delete('/api/inventory', async (req, res) => {
         res.json({
             success: true,
             message: 'Inventário limpo do banco de dados'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Rota para remover dispositivos por IDs
+app.post('/api/inventory/delete', async (req, res) => {
+    try {
+        const { ids } = req.body || {};
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Lista de IDs inválida'
+            });
+        }
+
+        const result = await deleteDevicesByIds(ids);
+
+        res.json({
+            success: true,
+            deleted: result.deletedCount || 0
         });
     } catch (error) {
         res.status(500).json({
