@@ -27,6 +27,7 @@ import {
 import { updateDisplayName } from './routes/update-display-name.js';
 import { saveDisplayName } from './routes/save-display-name.js';
 
+// Entrada principal da API: seguranca, sincronizacao e rotas de CRUD.
 const app = express();
 const PORT = 3002;
 
@@ -101,6 +102,7 @@ async function apiGet(url, headers) {
 }
 
 // FunÃ§Ã£o principal de sincronizaÃ§Ã£o
+// Sync completa: autenticacao, paginacao, normalizacao, deduplicacao e persistencia.
 async function performSync() {
     try {
         console.log('ðŸ”„ Iniciando sincronizaÃ§Ã£o com Action1...');
@@ -325,6 +327,7 @@ async function performSync() {
         console.log('ðŸ”„ Removendo duplicatas (priorizando dispositivos Online)...');
         const deviceMap = new Map();
         
+        // Deduplica por nome, priorizando status Online e ultimo last_seen.
         todosOsEndpoints.forEach(device => {
             const nome = device.nome.toLowerCase();
             
@@ -392,6 +395,7 @@ async function performSync() {
 }
 
 // Rota para sincronizaÃ§Ã£o manual
+// Rotas publicas para sincronizacao, manutencao do inventario e exportacao.
 app.post('/api/sync', async (req, res) => {
     try {
         const result = await performSync();
@@ -552,6 +556,7 @@ app.post('/api/update-display-name', updateDisplayName);
 app.post('/api/save-display-name', saveDisplayName);
 
 // Rota para exportar CSV
+// Endpoint CSV usado pela UI e por planilhas externas.
 app.get('/api/export/csv', async (req, res) => {
     try {
         const devices = await getAllDevices();

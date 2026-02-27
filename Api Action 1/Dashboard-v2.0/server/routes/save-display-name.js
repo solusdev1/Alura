@@ -8,6 +8,7 @@ const DB_NAME = process.env.MONGODB_DB_NAME || 'action1_inventory';
  * POST /api/save-display-name
  * Body: { deviceName, displayName, username, hostname, city, publicIP }
  */
+// Fluxo: valida payload -> encontra dispositivo -> atualiza campos manuais.
 export async function saveDisplayName(req, res) {
     try {
         console.log('\n🔄 ========================================');
@@ -46,8 +47,10 @@ export async function saveDisplayName(req, res) {
         const collection = db.collection('devices');
 
         // Buscar dispositivo no MongoDB
+        // Hostname tem prioridade; FQDN e reduzido para o host base.
         const searchName = hostname || deviceName.split('.')[0];
         
+        // Busca flexivel para cobrir variacoes de nome entre as fontes.
         const device = await collection.findOne({
             $or: [
                 { nome: { $regex: searchName, $options: 'i' } },
@@ -69,6 +72,7 @@ export async function saveDisplayName(req, res) {
         console.log(`✅ Dispositivo encontrado: ${device.nome}`);
 
         // Atualizar adDisplayName e cidade
+        // Atualiza apenas campos complementares, mantendo base do inventario.
         const updateFields = { 
             adDisplayName: displayName,
             updatedAt: new Date()

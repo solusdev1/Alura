@@ -1,9 +1,12 @@
 // API para consumir o servidor local v2.0
 // Detecta automaticamente se está em produção (Vercel) ou desenvolvimento (local)
+// Camada HTTP do frontend.
+// Centraliza URLs de endpoint e tratamento de erros.
 const SERVER_URL = import.meta.env.PROD 
     ? '' // Vercel usa mesma origem
     : 'http://localhost:3002';
 
+// Dispara sincronizacao manual com Action1 via backend.
 export async function syncInventory() {
     const response = await fetch(`${SERVER_URL}/api/sync`, {
         method: 'POST',
@@ -17,6 +20,7 @@ export async function syncInventory() {
     return await response.json();
 }
 
+// L? o snapshot consolidado do inventario retornado pelo backend.
 export async function getInventory() {
     const response = await fetch(`${SERVER_URL}/api/inventory`);
 
@@ -76,6 +80,7 @@ export async function deleteInventoryByIds(ids) {
     return await response.json();
 }
 
+// Atualiza somente os campos editaveis de um item do inventario.
 export async function updateInventoryDevice(id, payload) {
     const response = await fetch(`${SERVER_URL}/api/inventory/${encodeURIComponent(id)}`, {
         method: 'PATCH',
@@ -91,6 +96,7 @@ export async function updateInventoryDevice(id, payload) {
     return await response.json();
 }
 
+// Cria dispositivo manual quando ele nao vem da sync do Action1.
 export async function createInventoryDevice(payload) {
     const response = await fetch(`${SERVER_URL}/api/inventory`, {
         method: 'POST',

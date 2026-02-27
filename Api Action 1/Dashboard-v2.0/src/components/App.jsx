@@ -24,6 +24,7 @@ const EMPTY_EDIT = {
   descricao: ''
 }
 
+// Estado inicial do modal de criacao manual de dispositivo.
 const EMPTY_CREATE = {
   nome: '',
   tipo: '',
@@ -57,6 +58,7 @@ function App() {
   const [detailModal, setDetailModal] = useState(null)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('themeMode') === 'dark')
 
+  // Carrega inventario e status do servidor para alinhar UI com backend.
   const carregarDados = async () => {
     setLoading(true)
     setError('')
@@ -106,6 +108,7 @@ function App() {
     [dispositivos]
   )
 
+  // Derivacao principal da tabela: combina busca com filtros de tipo/status.
   const dispositivosFiltrados = useMemo(() => {
     const termo = busca.toLowerCase()
     return dispositivos.filter(device => {
@@ -132,6 +135,7 @@ function App() {
     workstations: dispositivos.filter(d => d.tipo === 'Workstation').length
   }), [dispositivos])
 
+  // Cards de resumo no topo com metricas operacionais consolidadas.
   const cards = useMemo(() => {
     const clouds = new Set()
     const licenses = new Set()
@@ -245,6 +249,7 @@ function App() {
     })
   }
 
+  // Persiste edicao do modal e aplica update otimista no estado local.
   const salvarEdicao = async (e) => {
     e.preventDefault()
     if (!editing) return
@@ -285,6 +290,7 @@ function App() {
     setCreating(true)
   }
 
+  // Valida campos obrigatorios e persiste criacao manual de dispositivo.
   const salvarCriacao = async (e) => {
     e.preventDefault()
     if (!createForm.setor || !createForm.tipo || !createForm.city) {
@@ -548,6 +554,7 @@ function App() {
   )
 }
 
+// Monta descricao compacta de hardware quando a descricao estiver vazia.
 function formatarDescricao(device) {
   const partes = []
   if (device.memoria && device.memoria !== 'N/A') partes.push(device.memoria)
@@ -563,6 +570,7 @@ function normalizarStatus(status) {
   return 'other'
 }
 
+// Usa email salvo; se ausente, deriva padrao corporativo pelo usuario.
 function obterEmail(device) {
   if (device?.email && device.email !== 'N/A') return device.email
   if (!device?.usuario) return '-'

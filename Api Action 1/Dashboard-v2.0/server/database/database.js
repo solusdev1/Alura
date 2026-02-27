@@ -16,6 +16,7 @@ const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
 const DB_NAME = process.env.MONGODB_DATABASE || 'action1_inventory';
 const COLLECTION_DEVICES = 'devices';
 const COLLECTION_METADATA = 'metadata';
+// Inventario suplementar manual para ativos fora da descoberta do Action1.
 const SUPPLEMENTAL_PATH = join(__dirname, '../data/supplemental-inventory.json');
 const EXTRA_DEVICE_TYPES = new Set(['bipe', 'celular', 'coletor', 'roteador', 'switch']);
 
@@ -137,6 +138,7 @@ function supplementalToDevice(item) {
     };
 }
 
+// Mescla dados do Action1 com ajustes manuais preservando campos editados.
 function mergeDevicesWithSupplemental(apiDevices, existingDevices) {
     const supplemental = readSupplementalDevices();
     const indexes = buildSupplementalIndexes(supplemental);
@@ -179,6 +181,7 @@ function removeFromSupplemental(ids) {
 /**
  * Conectar ao MongoDB
  */
+// Tenta MongoDB primeiro; se falhar, usa arquivos JSON como fallback.
 async function connectDB() {
     if (db) return db;
     
@@ -262,6 +265,7 @@ async function getDB() {
 /**
  * Salvar múltiplos dispositivos no banco de dados
  */
+// Substitui o snapshot do inventario com dados sincronizados + suplementares.
 export async function saveDevices(devices) {
     if (useJSON) {
         let existing = [];
@@ -515,6 +519,7 @@ export async function deleteDevicesByIds(ids) {
 /**
  * Atualizar um dispositivo por ID
  */
+// Atualizacao defensiva: aceita apenas campos permitidos no payload.
 export async function updateDeviceById(id, updates) {
     if (!isNonEmpty(id) || !updates || typeof updates !== 'object') {
         return { matchedCount: 0, modifiedCount: 0 };
@@ -577,6 +582,7 @@ export async function updateDeviceById(id, updates) {
 /**
  * Criar um novo dispositivo manualmente
  */
+// Criacao manual com defaults para manter formato consistente de dispositivo.
 export async function createDevice(payload) {
     if (!payload || typeof payload !== 'object') {
         throw new Error('Payload inválido');

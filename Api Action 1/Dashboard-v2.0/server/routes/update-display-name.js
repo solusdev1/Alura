@@ -7,6 +7,7 @@ const ACTION1_BASE_URL = 'https://app.action1.com/api/3.0';
  * Endpoint: POST /api/update-display-name
  * Body: { deviceName, displayName, username, hostname, domain }
  */
+// Fluxo: autentica no Action1 -> encontra endpoint -> grava custom attribute.
 export async function updateDisplayName(req, res) {
     try {
         console.log('\n🔄 ========================================');
@@ -45,6 +46,7 @@ export async function updateDisplayName(req, res) {
         const { access_token } = await authRes.json();
         console.log('✅ Autenticação bem-sucedida!');
 
+        // Reaproveita headers autenticados em todas as chamadas ao Action1.
         const headers = {
             Authorization: `Bearer ${access_token}`,
             Accept: 'application/json',
@@ -84,6 +86,7 @@ export async function updateDisplayName(req, res) {
         console.log(`   Total de dispositivos: ${devices.length}`);
 
         // Buscar de forma flexível (por deviceName ou hostname)
+        // Busca tolerante para diferencas de nomenclatura entre hostname/device.
         const device = devices.find(d => 
             d.name === deviceName || 
             d.device_name === deviceName ||
@@ -109,6 +112,7 @@ export async function updateDisplayName(req, res) {
         console.log('\n💾 Atualizando custom attribute...');
 
         // Obter custom attributes atuais ou criar array vazio
+        // O PUT do Action1 exige o array custom completo (nao patch parcial).
         let customAttributes = device.custom || [];
         
         if (customAttributes.length === 0) {
