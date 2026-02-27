@@ -1,592 +1,572 @@
-﻿import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import '../styles/App.css'
-import { getInventory, syncInventory, getServerStatus, deleteInventoryByIds } from '../services/api.js'
+import {
+  createInventoryDevice,
+  deleteInventoryByIds,
+  getInventory,
+  getServerStatus,
+  syncInventory,
+  updateInventoryDevice
+} from '../services/api.js'
 
-function App() { // Componente principal da aplicação
+const BASE_SETOR_OPTIONS = ['TI', 'Frota', 'Financeiro', 'Comercial', 'RH', 'Operacao', 'Sem setor']
+const BASE_TIPO_OPTIONS = ['Notebook', 'Workstation', 'Bipe', 'Celular', 'Coletor', 'Roteador', 'Switch']
+const BASE_LOC_OPTIONS = ['SJP', 'SP', 'RS', 'ES', 'GOIAS', 'MINAS']
+
+const EMPTY_EDIT = {
+  adDisplayName: '',
+  email: '',
+  cloud: '',
+  setor: '',
+  city: '',
+  status: '',
+  dataAlteracao: '',
+  descricao: ''
+}
+
+const EMPTY_CREATE = {
+  nome: '',
+  tipo: '',
+  setor: '',
+  city: '',
+  adDisplayName: '',
+  email: '',
+  cloud: '',
+  status: 'Em Uso',
+  dataAlteracao: '',
+  descricao: '',
+  hostname: '',
+  perifericos: '',
+  duasTelas: 'Nao',
+  serial: ''
+}
+
+function App() {
   const [dispositivos, setDispositivos] = useState([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [lastUpdate, setLastUpdate] = useState(null)
-  const [serverStatus, setServerStatus] = useState(null)
+  const [error, setError] = useState('')
+  const [busca, setBusca] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('Todos')
   const [filtroStatus, setFiltroStatus] = useState('Todos')
-  const [busca, setBusca] = useState('')
-  const [ordenacao, setOrdenacao] = useState({ campo: 'tipo', direcao: 'asc' })
-  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [serverStatus, setServerStatus] = useState({ server: 'offline' })
+  const [editing, setEditing] = useState(null)
   const [selectedDevice, setSelectedDevice] = useState(null)
-  const [columnWidths, setColumnWidths] = useState({
-    select: 50,
-    tipo: 120,
-    responsavel: 150,
-    email: 250,
-    nome: 200,
-    descricao: 300,
-    status: 120,
-    localizacao: 150
-  }) // Larguras iniciais das colunas
-  const [isResizing, setIsResizing] = useState(null)
-  const [tableHeight, setTableHeight] = useState(500)
-  const [isResizingHeight, setIsResizingHeight] = useState(false)
-  const [headerHeight, setHeaderHeight] = useState(null)
-  const [isResizingHeader, setIsResizingHeader] = useState(false)
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode')
-    return saved === 'true'
-  })
+  const [editForm, setEditForm] = useState(EMPTY_EDIT)
+  const [creating, setCreating] = useState(false)
+  const [createForm, setCreateForm] = useState(EMPTY_CREATE)
+  const [detailModal, setDetailModal] = useState(null)
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('themeMode') === 'dark')
 
-  const handleOrdenar = (campo) => { // Função para ordenar por coluna
-    setOrdenacao(prev => ({
-      campo: campo,
-      direcao: prev.campo === campo && prev.direcao === 'asc' ? 'desc' : 'asc'
-    }))
-  }
-
-  const handleMouseDown = (e, column) => { // Função para redimensionar colunas
-    e.preventDefault()
-    e.stopPropagation()
-    setIsResizing({ column, startX: e.pageX, startWidth: columnWidths[column] })
-  }
-
-  useEffect(() => { // Redimensionar colunas
-    const handleMouseMove = (e) => { // Função para redimensionar colunas
-      if (!isResizing) return
-      const diff = e.pageX - isResizing.startX
-      const newWidth = Math.max(50, isResizing.startWidth + diff)
-      setColumnWidths(prev => ({ ...prev, [isResizing.column]: newWidth }))
+  const carregarDados = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const dados = await getInventory()
+      setDispositivos(dados)
+      try {
+        const status = await getServerStatus()
+        setServerStatus(status || { server: 'offline' })
+      } catch (_) {
+        setServerStatus({ server: 'offline' })
+      }
+    } catch (err) {
+      setError(err.message || 'Falha ao carregar inventario')
+    } finally {
+      setLoading(false)
     }
-
-    const handleMouseUp = () => {
-      setIsResizing(null)
-    }
-
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [isResizing])
-
-  const handleHeightMouseDown = (e) => { // Função para redimensionar altura da tabela
-    e.preventDefault()
-    setIsResizingHeight({ startY: e.pageY, startHeight: tableHeight })
   }
 
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isResizingHeight) return
-      const diff = e.pageY - isResizingHeight.startY
-      const newHeight = Math.max(200, isResizingHeight.startHeight + diff)
-      setTableHeight(newHeight)
-    }
-
-    const handleMouseUp = () => {
-      setIsResizingHeight(false)
-    }
-
-    if (isResizingHeight) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [isResizingHeight])
-
-  const handleHeaderMouseDown = (e) => {
-    e.preventDefault()
-    setIsResizingHeader({ startY: e.pageY, startHeight: headerHeight || 0 })
-  }
-
-  useEffect(() => { // Redimensionar altura do cabeçalho
-    const handleMouseMove = (e) => {
-      if (!isResizingHeader) return
-      const diff = e.pageY - isResizingHeader.startY
-      const newHeight = Math.max(50, isResizingHeader.startHeight + diff)
-      setHeaderHeight(newHeight)
-    }
-
-    const handleMouseUp = () => {
-      setIsResizingHeader(false)
-    }
-
-    if (isResizingHeader) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [isResizingHeader])
-
-  const verificarServidor = async () => { // Verificar status do servidor
-    try {
-      const status = await getServerStatus()
-      setServerStatus(status)
-      if (status.lastSync) {
-        setLastUpdate(new Date(status.lastSync))
-      }
-    } catch (err) {
-      setServerStatus({ server: 'offline' })
-    }
-  }
-
-  const carregarDados = async () => { // Carregar dados do inventário
-    setLoading(true)
-    setError(null)
-    
-    try {
-      // Buscar dados do servidor local
-      const dados = await getInventory()
-      setDispositivos(dados)
-      setSelectedIds(new Set())
-      await verificarServidor()
-    } catch (err) {
-      setError(err.message)
-      console.error('Erro ao carregar dados:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const sincronizarAutomaticamente = async () => { // Sincronizar automaticamente com Action1
-    setLoading(true)
-    setError(null)
-    
-    try {
-      console.log('🔄 Sincronizando automaticamente com Action1...')
-      const result = await syncInventory()
-      console.log('✅ Sincronização concluída:', result)
-      
-      // Carregar dados após sincronizar
-      await carregarDados()
-    } catch (err) {
-      setError(`Erro na sincronização: ${err.message}`)
-      console.error('Erro ao sincronizar:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => { // Carregar dados ao montar o componente
-    // Apenas carregar dados existentes ao iniciar
-    // Não sincronizar automaticamente
     carregarDados()
   }, [])
 
-  useEffect(() => { // Aplicar dark mode
-    if (darkMode) {
-      document.body.classList.add('dark-mode')
-    } else {
-      document.body.classList.remove('dark-mode')
-    }
-    localStorage.setItem('darkMode', darkMode)
+  useEffect(() => {
+    document.body.classList.toggle('theme-dark', darkMode)
+    localStorage.setItem('themeMode', darkMode ? 'dark' : 'light')
   }, [darkMode])
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode)
-  }
+  useEffect(() => {
+    const hasModalOpen = Boolean(editing || creating || selectedDevice || detailModal)
+    if (hasModalOpen) document.body.classList.add('modal-open')
+    else document.body.classList.remove('modal-open')
+    return () => document.body.classList.remove('modal-open')
+  }, [editing, creating, selectedDevice, detailModal])
 
-  // Filtrar dispositivos
-  const dispositivosFiltrados = dispositivos.filter(device => { // Função para filtrar dispositivos
-    const matchTipo = filtroTipo === 'Todos' || device.tipo === filtroTipo
-    const matchStatus = filtroStatus === 'Todos' || device.status?.toLowerCase() === filtroStatus.toLowerCase()
-    const matchBusca = busca === '' || 
-      device.nome?.toLowerCase().includes(busca.toLowerCase()) ||
-      device.usuario?.toLowerCase().includes(busca.toLowerCase()) ||
-      device.adDisplayName?.toLowerCase().includes(busca.toLowerCase()) ||
-      device.ip?.toLowerCase().includes(busca.toLowerCase()) ||
-      device.organizacao?.toLowerCase().includes(busca.toLowerCase()) ||
-      device.city?.toLowerCase().includes(busca.toLowerCase())
-    return matchTipo && matchStatus && matchBusca
-  }).sort((a, b) => {
-    let valorA, valorB;
-    
-    switch(ordenacao.campo) { // Definir valores para ordenação
-      case 'tipo':
-        valorA = a.tipo || '';
-        valorB = b.tipo || '';
-        break;
-      case 'responsavel':
-        valorA = a.adDisplayName || a.usuario || '';
-        valorB = b.adDisplayName || b.usuario || '';
-        break;
-      case 'nome':
-        valorA = a.nome || '';
-        valorB = b.nome || '';
-        break;
-      case 'status':
-        valorA = a.status || '';
-        valorB = b.status || '';
-        break;
-      case 'localizacao':
-        valorA = a.city || a.organizacao || '';
-        valorB = b.city || b.organizacao || '';
-        break;
-      case 'data':
-        valorA = a.last_seen ? new Date(a.last_seen).getTime() : 0;
-        valorB = b.last_seen ? new Date(b.last_seen).getTime() : 0;
-        break;
-      default:
-        return 0;
-    }
-    
-    if (typeof valorA === 'string') {
-      valorA = valorA.toLowerCase();
-      valorB = valorB.toLowerCase();
-    }
-    
-    if (ordenacao.direcao === 'asc') {
-      return valorA > valorB ? 1 : valorA < valorB ? -1 : 0;
-    } else {
-      return valorA < valorB ? 1 : valorA > valorB ? -1 : 0;
-    }
-  })
+  const tipoOptions = useMemo(
+    () => Array.from(new Set([...BASE_TIPO_OPTIONS, ...dispositivos.map(d => d.tipo).filter(Boolean)])),
+    [dispositivos]
+  )
+  const tiposUnicos = useMemo(() => ['Todos', ...tipoOptions], [tipoOptions])
+  const setorOptions = useMemo(
+    () => Array.from(new Set([...BASE_SETOR_OPTIONS, ...dispositivos.map(d => d.setor).filter(Boolean)])),
+    [dispositivos]
+  )
+  const cityOptions = useMemo(
+    () => Array.from(new Set([...BASE_LOC_OPTIONS, ...dispositivos.map(d => d.city).filter(Boolean)])),
+    [dispositivos]
+  )
 
-  const isAllVisibleSelected = dispositivosFiltrados.length > 0 &&
-    dispositivosFiltrados.every(d => selectedIds.has(d.id))
-
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      return next
+  const dispositivosFiltrados = useMemo(() => {
+    const termo = busca.toLowerCase()
+    return dispositivos.filter(device => {
+      const matchTipo = filtroTipo === 'Todos' || device.tipo === filtroTipo
+      const matchStatus = filtroStatus === 'Todos' || String(device.status || '').toLowerCase() === filtroStatus.toLowerCase()
+      const matchBusca = !termo ||
+        device.nome?.toLowerCase().includes(termo) ||
+        device.adDisplayName?.toLowerCase().includes(termo) ||
+        device.usuario?.toLowerCase().includes(termo) ||
+        device.email?.toLowerCase().includes(termo) ||
+        device.cloud?.toLowerCase().includes(termo) ||
+        device.setor?.toLowerCase().includes(termo) ||
+        device.ip?.toLowerCase().includes(termo) ||
+        device.organizacao?.toLowerCase().includes(termo)
+      return matchTipo && matchStatus && matchBusca
     })
-  }
+  }, [dispositivos, filtroTipo, filtroStatus, busca])
 
-  const toggleSelectAllVisible = () => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (isAllVisibleSelected) {
-        dispositivosFiltrados.forEach(d => next.delete(d.id))
-      } else {
-        dispositivosFiltrados.forEach(d => next.add(d.id))
-      }
-      return next
+  const statsTop = useMemo(() => ({
+    total: dispositivos.length,
+    online: dispositivos.filter(d => String(d.status || '').toLowerCase() === 'online').length,
+    offline: dispositivos.filter(d => String(d.status || '').toLowerCase() === 'offline').length,
+    notebooks: dispositivos.filter(d => d.tipo === 'Notebook').length,
+    workstations: dispositivos.filter(d => d.tipo === 'Workstation').length
+  }), [dispositivos])
+
+  const cards = useMemo(() => {
+    const clouds = new Set()
+    const licenses = new Set()
+    dispositivosFiltrados.forEach(d => {
+      if (d.cloud && d.cloud !== 'N/A') clouds.add(String(d.cloud).toLowerCase())
+      const email = obterEmail(d)
+      if (email && email !== 'N/A' && email !== '-') licenses.add(email.toLowerCase())
     })
-  }
+    return { total: dispositivosFiltrados.length, cloudsAtivos: clouds.size, licencas: licenses.size }
+  }, [dispositivosFiltrados])
 
-  const limparSelecao = () => setSelectedIds(new Set())
+  const grupos = useMemo(() => {
+    const grouped = new Map()
+    dispositivosFiltrados.forEach(device => {
+      const setor = device.setor || 'Sem setor'
+      if (!grouped.has(setor)) grouped.set(setor, [])
+      grouped.get(setor).push(device)
+    })
+    return Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  }, [dispositivosFiltrados])
 
-  const excluirSelecionados = async () => {
-    if (selectedIds.size === 0) return
-    const quantidade = selectedIds.size
-    const ok = window.confirm(`Excluir ${quantidade} dispositivo(s) do dashboard? Essa ação não pode ser desfeita.`)
-    if (!ok) return
+  const detalhesAparelhos = useMemo(() => {
+    const byTipo = new Map()
+    const bySetorTipo = new Map()
+    dispositivosFiltrados.forEach(d => {
+      const tipo = d.tipo || 'Nao informado'
+      const setor = d.setor || 'Sem setor'
+      byTipo.set(tipo, (byTipo.get(tipo) || 0) + 1)
+      const key = `${setor}|||${tipo}`
+      bySetorTipo.set(key, (bySetorTipo.get(key) || 0) + 1)
+    })
+    return {
+      byTipo: Array.from(byTipo.entries()).map(([tipo, total]) => ({ tipo, total })).sort((a, b) => b.total - a.total),
+      bySetorTipo: Array.from(bySetorTipo.entries()).map(([key, quantidade]) => {
+        const [setor, tipo] = key.split('|||')
+        return { setor, tipo, quantidade }
+      }).sort((a, b) => b.quantidade - a.quantidade)
+    }
+  }, [dispositivosFiltrados])
 
+  const detalhesCloud = useMemo(() => {
+    const rows = dispositivosFiltrados
+      .filter(d => d.cloud && d.cloud !== 'N/A' && d.cloud !== 'Nao informado')
+      .map(d => ({
+        setor: d.setor || 'Sem setor',
+        responsavel: d.adDisplayName || d.usuario || '-',
+        cloud: d.cloud
+      }))
+
+    const byCloud = new Map()
+    rows.forEach(r => byCloud.set(String(r.cloud).toLowerCase(), (byCloud.get(String(r.cloud).toLowerCase()) || 0) + 1))
+    const repetidosSet = new Set(Array.from(byCloud.entries()).filter(([, v]) => v > 1).map(([k]) => k))
+    const repetidos = rows.filter(r => repetidosSet.has(String(r.cloud).toLowerCase()))
+
+    return {
+      totalRegistros: rows.length,
+      tiposCloud: new Set(rows.map(r => String(r.cloud).toLowerCase())).size,
+      cloudsRepetidos: repetidosSet.size,
+      repetidos
+    }
+  }, [dispositivosFiltrados])
+
+  const detalhesLicencas = useMemo(() => {
+    const rows = dispositivosFiltrados
+      .map(d => ({
+        setor: d.setor || 'Sem setor',
+        responsavel: d.adDisplayName || d.usuario || '-',
+        email: obterEmail(d)
+      }))
+      .filter(r => r.email && r.email !== '-' && r.email !== 'N/A' && !String(r.email).toLowerCase().includes('nao informado'))
+
+    const uniq = new Set()
+    const dedup = rows.filter(r => {
+      const key = `${r.setor}|${r.responsavel}|${String(r.email).toLowerCase()}`
+      if (uniq.has(key)) return false
+      uniq.add(key)
+      return true
+    })
+
+    return {
+      totalLicencas: new Set(dedup.map(r => String(r.email).toLowerCase())).size,
+      setores: new Set(dedup.map(r => r.setor)).size,
+      responsaveis: new Set(dedup.map(r => String(r.responsavel).toLowerCase())).size,
+      rows: dedup
+    }
+  }, [dispositivosFiltrados])
+
+  const handleSync = async () => {
     setLoading(true)
-    setError(null)
+    setError('')
     try {
-      const ids = Array.from(selectedIds)
-      await deleteInventoryByIds(ids)
-      setDispositivos(prev => prev.filter(d => !selectedIds.has(d.id)))
-      limparSelecao()
+      await syncInventory()
+      await carregarDados()
     } catch (err) {
-      setError(`Erro ao excluir: ${err.message}`)
-    } finally {
+      setError(err.message || 'Erro na sincronizacao')
       setLoading(false)
     }
   }
 
-  const abrirDetalhes = (device) => {
-    setSelectedDevice(device)
+  const abrirEdicao = (device) => {
+    setEditing(device)
+    setEditForm({
+      adDisplayName: device.adDisplayName || device.usuario || '',
+      email: device.email || '',
+      cloud: device.cloud || '',
+      setor: device.setor || '',
+      city: device.city || '',
+      status: device.status || '',
+      dataAlteracao: device.dataAlteracao || '',
+      descricao: device.descricao || formatarDescricao(device)
+    })
   }
 
-  const fecharDetalhes = () => {
-    setSelectedDevice(null)
+  const salvarEdicao = async (e) => {
+    e.preventDefault()
+    if (!editing) return
+    const payload = {
+      adDisplayName: editForm.adDisplayName,
+      usuario: editForm.adDisplayName,
+      email: editForm.email,
+      cloud: editForm.cloud,
+      setor: editForm.setor,
+      city: editForm.city,
+      status: editForm.status,
+      dataAlteracao: editForm.dataAlteracao,
+      descricao: editForm.descricao
+    }
+    try {
+      await updateInventoryDevice(editing.id, payload)
+      setDispositivos(prev => prev.map(d => (d.id === editing.id ? { ...d, ...payload } : d)))
+      setEditing(null)
+      setEditForm(EMPTY_EDIT)
+    } catch (err) {
+      setError(err.message || 'Erro ao salvar alteracao')
+    }
   }
 
-  // Obter tipos únicos
-  const tiposUnicos = ['Todos', ...new Set(dispositivos.map(d => d.tipo).filter(Boolean))]
-  
-  // Estatísticas
-  const totalDispositivos = dispositivos.length
-  const totalOnline = dispositivos.filter(d => d.status?.toLowerCase() === 'online').length
-  const totalOffline = dispositivos.filter(d => d.status?.toLowerCase() === 'offline').length
-  const totalNotebooks = dispositivos.filter(d => d.tipo === 'Notebook').length
-  const totalWorkstations = dispositivos.filter(d => d.tipo === 'Workstation').length
-  
-  // Formatar descrição do dispositivo
-  const formatarDescricao = (device) => { // Função para formatar descrição
-    const partes = []
-    if (device.memoria && device.memoria !== 'N/A') partes.push(device.memoria)
-    if (device.disco && device.disco !== 'N/A') partes.push(device.disco)
-    if (device.so && device.so !== 'N/A') partes.push(device.so)
-    return partes.join(', ') || 'N/A'
+  const excluirDispositivo = async (device) => {
+    const ok = window.confirm(`Excluir ${device.nome || device.id}?`)
+    if (!ok) return
+    try {
+      await deleteInventoryByIds([device.id])
+      setDispositivos(prev => prev.filter(d => d.id !== device.id))
+    } catch (err) {
+      setError(err.message || 'Erro ao excluir')
+    }
   }
 
-  // Exportar para CSV
-  const exportarCSV = () => {
-    window.open('http://localhost:3002/api/export/csv', '_blank')
+  const abrirCriacao = () => {
+    setCreateForm({ ...EMPTY_CREATE, dataAlteracao: new Date().toLocaleString('pt-BR') })
+    setCreating(true)
   }
 
-  const obterEmail = (device) => {
-    if (!device?.usuario) return 'N/A'
-    return `${device.usuario.toLowerCase().replace(/\\/g, '').replace(/\s/g, '.').replace(/carrarolog/g, '')}@carrarologistica.com.br`
+  const salvarCriacao = async (e) => {
+    e.preventDefault()
+    if (!createForm.setor || !createForm.tipo || !createForm.city) {
+      setError('Selecione Setor, Tipo de Aparelho e Localizacao Fisica')
+      return
+    }
+    try {
+      const payload = { ...createForm, usuario: createForm.adDisplayName }
+      const result = await createInventoryDevice(payload)
+      setDispositivos(prev => [result?.data || payload, ...prev])
+      setCreating(false)
+      setCreateForm(EMPTY_CREATE)
+    } catch (err) {
+      setError(err.message || 'Erro ao criar equipamento')
+    }
   }
 
-  const obterCloud = (device) => {
-    return device?.cloudEmail || device?.cloud || 'N/A'
+  const exportarCSV = () => window.open('http://localhost:3002/api/export/csv', '_blank')
+
+  const exportarDetalheCSV = (nome, linhas, headers) => {
+    const csv = [headers.join(','), ...linhas.map(row => headers.map(h => `"${String(row[h] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n')
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${nome}_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (
     <div className="App">
       <header className="App-header">
-        <div className="header-title-row">
-          <img src="/assets/logocarraro.png" alt="Carraro" className="company-logo" />
-          <h1>📊 Inventário TI</h1>
-          <button 
-            onClick={toggleDarkMode} 
-            className="dark-mode-toggle"
-            title={darkMode ? "Ativar modo claro" : "Ativar modo noturno"}
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-        </div>
-        
-        <div className="header-content" style={headerHeight ? {height: headerHeight, overflow: 'auto'} : {}}>
-        <div className="server-info">
-          {serverStatus && (
-            <>
-              <div className={`status-badge ${serverStatus.server}`}>
-                {serverStatus.server === 'running' ? '🟢 Servidor Online' : '🔴 Servidor Offline'}
-                {serverStatus.version && ` v${serverStatus.version}`}
-              </div>
-              {serverStatus.database && (
-                <div className="db-badge">
-                  💾 {serverStatus.database.toUpperCase()}
-                </div>
-              )}
-            </>
-          )}
-          {lastUpdate && (
-            <div className="last-update">
-              Última sincronização: {lastUpdate.toLocaleString('pt-BR')}
+        <section className="hero-header">
+          <div className="hero-top">
+            <div className="hero-title">
+              <img src="/assets/logocarraro.png" alt="Carraro" />
+              <h1>Inventario TI</h1>
             </div>
-          )}
-        </div>
+            <div className="hero-actions">
+              <button className="theme-toggle" onClick={() => setDarkMode(prev => !prev)}>{darkMode ? 'Modo claro' : 'Modo noturno'}</button>
+              <button className="hero-action" onClick={handleSync} disabled={loading}>CONNECTED</button>
+            </div>
+          </div>
 
-        {error && (
-          <div className="error">
-            ❌ {error}
+          <div className="server-line">
+            <span className={`dot ${serverStatus.server === 'running' ? 'ok' : 'fail'}`} />
+            <strong>Servidor {serverStatus.server === 'running' ? 'Online' : 'Offline'}</strong>
           </div>
-        )}
 
-        <div className="stats-bar">
-          <div className="stat-item">
-            <span className="stat-label">Total:</span>
-            <span className="stat-value">{totalDispositivos}</span>
+          <div className="top-stats">
+            <span>Total: <strong>{statsTop.total}</strong></span>
+            <span>Online: <strong>{statsTop.online}</strong></span>
+            <span>Offline: <strong>{statsTop.offline}</strong></span>
+            <span>Notebooks: <strong>{statsTop.notebooks}</strong></span>
+            <span>Workstations: <strong>{statsTop.workstations}</strong></span>
           </div>
-          <div className="stat-item">
-            <span className="stat-label">🟢 Online:</span>
-            <span className="stat-value">{totalOnline}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">🔴 Offline:</span>
-            <span className="stat-value">{totalOffline}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">💻 Notebooks:</span>
-            <span className="stat-value">{totalNotebooks}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">🖥️ Workstations:</span>
-            <span className="stat-value">{totalWorkstations}</span>
-          </div>
-        </div>
 
-        <div className="filters-row">
-          <div className="filter-group">
-            <input 
-              type="text" 
-              placeholder="🔍 Buscar por nome, usuário, IP ou organização..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          
-          <div className="filter-group">
-            <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
-              {tiposUnicos.map(tipo => (
-                <option key={tipo} value={tipo}>{tipo}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="filter-group">
+          <div className="hero-filters">
+            <input className="search-input dark" type="text" placeholder="Buscar por nome, usuario, IP ou organizacao..." value={busca} onChange={(e) => setBusca(e.target.value)} />
+            <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>{tiposUnicos.map(tipo => <option key={tipo} value={tipo}>{tipo}</option>)}</select>
             <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
               <option value="Todos">Todos os Status</option>
               <option value="Online">Online</option>
               <option value="Offline">Offline</option>
+              <option value="Em Uso">Em Uso</option>
             </select>
+            <button className="btn-export-top" onClick={exportarCSV}>Exportar CSV</button>
+            <button className="btn-add-top" onClick={abrirCriacao}>Adicionar equipamento</button>
           </div>
 
-          <div className="filter-group">
-            <button onClick={exportarCSV} className="btn-export" title="Exportar para CSV">
-              📥 Exportar CSV
-            </button>
-          
-          {selectedIds.size > 0 && (
-            <div className="filter-group">
-              <button 
-                onClick={excluirSelecionados} 
-                className="btn-delete" 
-                title="Excluir selecionados"
-                disabled={loading}
-              >
-                Excluir ({selectedIds.size})
-              </button>
-            </div>
-          )}
-          </div>
-        </div>
+          <div className="results-line">Mostrando {dispositivosFiltrados.length} de {dispositivos.length} dispositivos</div>
+        </section>
 
-        <div className="results-info">
-          Mostrando {dispositivosFiltrados.length} de {totalDispositivos} dispositivos
-          {selectedIds.size > 0 && ` â€¢ Selecionados: ${selectedIds.size}`}
-        </div>
-        </div>
+        <section className="cards-grid">
+          <article className="info-card card-clickable" onClick={() => setDetailModal('aparelhos')}>
+            <p>Total de aparelhos</p><strong>{cards.total}</strong><span>Clique para ver o detalhamento</span>
+          </article>
+          <article className="info-card card-clickable" onClick={() => setDetailModal('clouds')}>
+            <p>Clouds ativos</p><strong>{cards.cloudsAtivos}</strong><span>Clique para ver o detalhamento</span>
+          </article>
+          <article className="info-card card-clickable" onClick={() => setDetailModal('licencas')}>
+            <p>Licencas Microsoft</p><strong>{cards.licencas}</strong><span>Clique para ver o detalhamento</span>
+          </article>
+        </section>
 
-        <div className="header-resize-handle" onMouseDown={handleHeaderMouseDown}>
-          <div className="resize-indicator">⋮</div>
-        </div>
+        {error && <div className="error">{error}</div>}
+        {loading && <div className="loading">Carregando...</div>}
 
-        {loading ? (
-          <div className="loading">Carregando...</div>
-        ) : (
-          <div className="table-wrapper">
-            <div className="table-container" style={{height: tableHeight, overflow: 'auto'}}>
+        {!loading && grupos.map(([setor, items]) => (
+          <section key={setor} className="setor-block">
+            <h2>{setor}</h2>
+            <div className="table-scroll">
               <table className="inventory-table">
-              <thead>
-                <tr>
-                    <th style={{width: columnWidths.select, position: 'relative'}}>
-                      <input
-                        type="checkbox"
-                        checked={isAllVisibleSelected}
-                        onChange={toggleSelectAllVisible}
-                        title="Selecionar todos"
-                      />
-                      <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'select')} />
-                    </th>
-                  <th style={{width: columnWidths.tipo, position: 'relative'}}>
-                    <div onClick={() => handleOrdenar('tipo')} style={{cursor: 'pointer', paddingRight: '10px'}}>
-                      Tipo {ordenacao.campo === 'tipo' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                    </div>
-                    <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'tipo')} />
-                  </th>
-                  <th style={{width: columnWidths.responsavel, position: 'relative'}}>
-                    <div onClick={() => handleOrdenar('responsavel')} style={{cursor: 'pointer', paddingRight: '10px'}}>
-                      Responsável {ordenacao.campo === 'responsavel' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                    </div>
-                    <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'responsavel')} />
-                  </th>
-                  <th style={{width: columnWidths.email, position: 'relative'}}>
-                    <div style={{paddingRight: '10px'}}>Email</div>
-                    <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'email')} />
-                  </th>
-                  <th style={{width: columnWidths.nome, position: 'relative'}}>
-                    <div onClick={() => handleOrdenar('nome')} style={{cursor: 'pointer', paddingRight: '10px'}}>
-                      Nome do Dispositivo {ordenacao.campo === 'nome' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                    </div>
-                    <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'nome')} />
-                  </th>
-                  <th style={{width: columnWidths.descricao, position: 'relative'}}>
-                    <div style={{paddingRight: '10px'}}>Descrição</div>
-                    <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'descricao')} />
-                  </th>
-                  <th style={{width: columnWidths.status, position: 'relative'}}>
-                    <div onClick={() => handleOrdenar('status')} style={{cursor: 'pointer', paddingRight: '10px'}}>
-                      Status {ordenacao.campo === 'status' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                    </div>
-                    <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'status')} />
-                  </th>
-                  <th style={{width: columnWidths.localizacao, position: 'relative'}}>
-                    <div onClick={() => handleOrdenar('localizacao')} style={{cursor: 'pointer', paddingRight: '10px'}}>
-                      Localização {ordenacao.campo === 'localizacao' && (ordenacao.direcao === 'asc' ? '▲' : '▼')}
-                    </div>
-                    <div className="resize-handle" onMouseDown={(e) => handleMouseDown(e, 'localizacao')} />
-                  </th>
-                </tr>
-              </thead>
-              <tbody> 
-                {dispositivosFiltrados.map((device) => (
-                  <tr 
-                    key={device.id} 
-                    className={`${device.status?.toLowerCase()} ${selectedIds.has(device.id) ? 'selected' : ''}`}
-                    onClick={() => abrirDetalhes(device)}
-                  >
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(device.id)}
-                        onChange={() => toggleSelect(device.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Selecionar linha"
-                      />
-                    </td>
-                    <td><span className="badge-tipo">{device.tipo || 'N/A'}</span></td>
-                    <td>{device.adDisplayName || device.usuario || 'N/A'}</td>
-                    <td className="email-col">{obterEmail(device)}</td>
-                    <td className="device-name">{device.nome || 'N/A'}</td>
-                    <td className="description">{formatarDescricao(device)}</td>
-                    <td>
-                      <span className={`badge-status ${device.status?.toLowerCase()}`}>
-                        {device.status === 'Online' ? '✓ Em Uso' : device.status === 'Offline' ? '○ Offline' : device.status || 'N/A'}
-                      </span>
-                    </td>
-                    <td>{device.city || device.organizacao || 'N/A'}</td>
+                <thead>
+                  <tr>
+                    <th>Tipo</th><th>Responsavel</th><th>Email</th><th>Cloud</th><th>Descricao</th><th>Status</th><th>Localizacao</th><th>Ultima alteracao</th><th>Acoes</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {items.map(device => (
+                    <tr key={device.id} className="row-clickable" onClick={() => setSelectedDevice(device)}>
+                      <td>{device.tipo || '-'}</td>
+                      <td>{device.adDisplayName || device.usuario || '-'}</td>
+                      <td>{obterEmail(device)}</td>
+                      <td>{device.cloud || '-'}</td>
+                      <td>{device.descricao || formatarDescricao(device)}</td>
+                      <td className="status-col"><span className={`badge-status ${normalizarStatus(device.status)}`}>{device.status || '-'}</span></td>
+                      <td>{device.city || device.organizacao || '-'}</td>
+                      <td>{device.dataAlteracao || '-'}</td>
+                      <td className="acoes">
+                        <button className="btn-edit" onClick={(e) => { e.stopPropagation(); abrirEdicao(device) }}>Editar</button>
+                        <button className="btn-remove" onClick={(e) => { e.stopPropagation(); excluirDispositivo(device) }}>Excluir</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="height-resize-handle" onMouseDown={handleHeightMouseDown}>
-              <div className="resize-indicator">⋮</div>
-            </div>
-          </div>
-        )}
-
-        {dispositivos.length === 0 && !loading && (
-          <p className="empty-message">Nenhum dispositivo encontrado. Clique em "Atualizar do Action1" para sincronizar.</p>
-        )}
-
-        {selectedDevice && (
-          <div className="modal-overlay" onClick={fecharDetalhes}>
-            <div className="detail-card" onClick={(e) => e.stopPropagation()}>
-              <div className="detail-card-header">
-                <h2>Detalhes do Equipamento</h2>
-                <button className="detail-close" onClick={fecharDetalhes} aria-label="Fechar">
-                  X
-                </button>
-              </div>
-              <div className="detail-card-body">
-                <div className="detail-row"><span className="detail-label">Tipo:</span> {selectedDevice.tipo || 'N/A'}</div>
-                <div className="detail-row"><span className="detail-label">Responsavel:</span> {selectedDevice.adDisplayName || selectedDevice.usuario || 'N/A'}</div>
-                <div className="detail-row"><span className="detail-label">Email:</span> {obterEmail(selectedDevice)}</div>
-                <div className="detail-row"><span className="detail-label">Cloud:</span> {obterCloud(selectedDevice)}</div>
-                <div className="detail-row"><span className="detail-label">Descricao:</span> {formatarDescricao(selectedDevice)}</div>
-                <div className="detail-row"><span className="detail-label">Localizacao Fisica:</span> {selectedDevice.city || selectedDevice.organizacao || 'N/A'}</div>
-                <div className="detail-row"><span className="detail-label">Obs adicional:</span> {selectedDevice.dispositivo || selectedDevice.hostname || selectedDevice.nome || 'N/A'}</div>
-                <div className="detail-row"><span className="detail-label">Numero serie:</span> {selectedDevice.serial || 'N/A'}</div>
-              </div>
-            </div>
-          </div>
-        )}
+          </section>
+        ))}
       </header>
+
+      {selectedDevice && (
+        <div className="modal-overlay" onClick={() => setSelectedDevice(null)}>
+          <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Detalhes do Equipamento</h3>
+            <p><strong>Tipo:</strong> {selectedDevice.tipo || '-'}</p>
+            <p><strong>Responsavel:</strong> {selectedDevice.adDisplayName || selectedDevice.usuario || '-'}</p>
+            <p><strong>Email:</strong> {obterEmail(selectedDevice)}</p>
+            <p><strong>Cloud:</strong> {selectedDevice.cloud || '-'}</p>
+            <p><strong>Descricao:</strong> {selectedDevice.descricao || formatarDescricao(selectedDevice)}</p>
+            <p><strong>Localizacao Fisica:</strong> {selectedDevice.city || selectedDevice.organizacao || '-'}</p>
+            <p><strong>Obs adicional:</strong> {selectedDevice.hostname || selectedDevice.nome || '-'}</p>
+            <p><strong>Numero serie:</strong> {selectedDevice.serial || '-'}</p>
+            <div className="modal-actions"><button type="button" onClick={() => setSelectedDevice(null)}>Fechar</button></div>
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <div className="modal-overlay" onClick={() => setEditing(null)}>
+          <form className="edit-modal" onClick={(e) => e.stopPropagation()} onSubmit={salvarEdicao}>
+            <h3>Editar dispositivo</h3>
+            <p>{editing.nome}</p>
+            <label>Responsavel<input value={editForm.adDisplayName} onChange={(e) => setEditForm(prev => ({ ...prev, adDisplayName: e.target.value }))} /></label>
+            <label>Email<input value={editForm.email} onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))} /></label>
+            <label>Cloud<input value={editForm.cloud} onChange={(e) => setEditForm(prev => ({ ...prev, cloud: e.target.value }))} /></label>
+            <label>Setor<input value={editForm.setor} onChange={(e) => setEditForm(prev => ({ ...prev, setor: e.target.value }))} /></label>
+            <label>Localizacao<input value={editForm.city} onChange={(e) => setEditForm(prev => ({ ...prev, city: e.target.value }))} /></label>
+            <label>Status<select value={editForm.status} onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}><option value="Online">Online</option><option value="Offline">Offline</option><option value="Em Uso">Em Uso</option></select></label>
+            <label>Data alteracao<input value={editForm.dataAlteracao} onChange={(e) => setEditForm(prev => ({ ...prev, dataAlteracao: e.target.value }))} /></label>
+            <label>Descricao<textarea rows="2" value={editForm.descricao} onChange={(e) => setEditForm(prev => ({ ...prev, descricao: e.target.value }))} /></label>
+            <div className="modal-actions"><button type="button" onClick={() => setEditing(null)}>Cancelar</button><button type="submit">Salvar</button></div>
+          </form>
+        </div>
+      )}
+
+      {creating && (
+        <div className="modal-overlay" onClick={() => setCreating(false)}>
+          <form className="edit-modal" onClick={(e) => e.stopPropagation()} onSubmit={salvarCriacao}>
+            <h3>Adicionar ao Estoque</h3>
+            <label>Setor
+              <select value={createForm.setor} onChange={(e) => setCreateForm(prev => ({ ...prev, setor: e.target.value }))} required>
+                <option value="">Selecione</option>
+                {setorOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </label>
+            <label>Tipo de Aparelho
+              <select value={createForm.tipo} onChange={(e) => setCreateForm(prev => ({ ...prev, tipo: e.target.value }))} required>
+                <option value="">Selecione</option>
+                {tipoOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </label>
+            <label>Localizacao Fisica
+              <select value={createForm.city} onChange={(e) => setCreateForm(prev => ({ ...prev, city: e.target.value }))} required>
+                <option value="">Selecione</option>
+                {cityOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </label>
+            <label>HostName<input value={createForm.hostname} onChange={(e) => setCreateForm(prev => ({ ...prev, hostname: e.target.value }))} /></label>
+            <label>Email Utilizado<input value={createForm.email} onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))} /></label>
+            <label>Pessoa Responsavel<input value={createForm.adDisplayName} onChange={(e) => setCreateForm(prev => ({ ...prev, adDisplayName: e.target.value }))} /></label>
+            <label>Cloud Utilizado<input value={createForm.cloud} onChange={(e) => setCreateForm(prev => ({ ...prev, cloud: e.target.value }))} /></label>
+            <label>Perifericos<input value={createForm.perifericos} onChange={(e) => setCreateForm(prev => ({ ...prev, perifericos: e.target.value }))} /></label>
+            <label>Chamadas Duas Telas
+              <select value={createForm.duasTelas} onChange={(e) => setCreateForm(prev => ({ ...prev, duasTelas: e.target.value }))}>
+                <option value="Nao">Selecione</option>
+                <option value="Sim">Sim</option>
+                <option value="Nao">Nao</option>
+              </select>
+            </label>
+            <label>Numero de Serie<input value={createForm.serial} onChange={(e) => setCreateForm(prev => ({ ...prev, serial: e.target.value }))} /></label>
+            <label>Descricao<textarea rows="2" value={createForm.descricao} onChange={(e) => setCreateForm(prev => ({ ...prev, descricao: e.target.value }))} /></label>
+            <div className="modal-actions"><button type="button" onClick={() => setCreating(false)}>Cancelar</button><button type="submit">Salvar</button></div>
+          </form>
+        </div>
+      )}
+
+      {detailModal === 'aparelhos' && (
+        <div className="modal-overlay" onClick={() => setDetailModal(null)}>
+          <div className="edit-modal details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="details-head">
+              <h3>Quantidade de Aparelhos por Setor</h3>
+              <button onClick={() => exportarDetalheCSV('aparelhos_por_setor_tipo', detalhesAparelhos.bySetorTipo, ['setor', 'tipo', 'quantidade'])}>Exportar para Excel</button>
+            </div>
+            <div className="mini-cards">
+              {detalhesAparelhos.byTipo.map(item => <div key={item.tipo} className="mini-card"><span>{item.tipo}</span><strong>{item.total}</strong></div>)}
+            </div>
+            <table className="inventory-table">
+              <thead><tr><th>Setor</th><th>Tipo de Aparelho</th><th>Quantidade</th></tr></thead>
+              <tbody>{detalhesAparelhos.bySetorTipo.map((r, i) => <tr key={`${r.setor}-${r.tipo}-${i}`}><td>{r.setor}</td><td>{r.tipo}</td><td>{r.quantidade}</td></tr>)}</tbody>
+            </table>
+            <div className="modal-actions"><button type="button" onClick={() => setDetailModal(null)}>Fechar</button></div>
+          </div>
+        </div>
+      )}
+
+      {detailModal === 'clouds' && (
+        <div className="modal-overlay" onClick={() => setDetailModal(null)}>
+          <div className="edit-modal details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="details-head">
+              <h3>Detalhes dos Clouds Ativos</h3>
+              <button onClick={() => exportarDetalheCSV('clouds_repetidos', detalhesCloud.repetidos, ['setor', 'responsavel', 'cloud'])}>Exportar para Excel</button>
+            </div>
+            <div className="mini-cards">
+              <div className="mini-card"><span>Clouds ativos</span><strong>{detalhesCloud.totalRegistros}</strong></div>
+              <div className="mini-card"><span>Tipos de cloud</span><strong>{detalhesCloud.tiposCloud}</strong></div>
+              <div className="mini-card"><span>Clouds repetidos</span><strong>{detalhesCloud.cloudsRepetidos}</strong></div>
+            </div>
+            <table className="inventory-table">
+              <thead><tr><th>Setor</th><th>Responsavel</th><th>Cloud</th></tr></thead>
+              <tbody>{detalhesCloud.repetidos.map((r, i) => <tr key={`${r.cloud}-${r.responsavel}-${i}`}><td>{r.setor}</td><td>{r.responsavel}</td><td>{r.cloud}</td></tr>)}</tbody>
+            </table>
+            <div className="modal-actions"><button type="button" onClick={() => setDetailModal(null)}>Fechar</button></div>
+          </div>
+        </div>
+      )}
+
+      {detailModal === 'licencas' && (
+        <div className="modal-overlay" onClick={() => setDetailModal(null)}>
+          <div className="edit-modal details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="details-head">
+              <h3>Detalhes das Licencas Microsoft</h3>
+              <button onClick={() => exportarDetalheCSV('licencas_microsoft', detalhesLicencas.rows, ['setor', 'responsavel', 'email'])}>Exportar para Excel</button>
+            </div>
+            <div className="mini-cards">
+              <div className="mini-card"><span>Licencas</span><strong>{detalhesLicencas.totalLicencas}</strong></div>
+              <div className="mini-card"><span>Setores</span><strong>{detalhesLicencas.setores}</strong></div>
+              <div className="mini-card"><span>Responsaveis</span><strong>{detalhesLicencas.responsaveis}</strong></div>
+            </div>
+            <table className="inventory-table">
+              <thead><tr><th>Setor</th><th>Responsavel</th><th>Email</th></tr></thead>
+              <tbody>{detalhesLicencas.rows.map((r, i) => <tr key={`${r.email}-${r.responsavel}-${i}`}><td>{r.setor}</td><td>{r.responsavel}</td><td>{r.email}</td></tr>)}</tbody>
+            </table>
+            <div className="modal-actions"><button type="button" onClick={() => setDetailModal(null)}>Fechar</button></div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+function formatarDescricao(device) {
+  const partes = []
+  if (device.memoria && device.memoria !== 'N/A') partes.push(device.memoria)
+  if (device.disco && device.disco !== 'N/A') partes.push(device.disco)
+  if (device.so && device.so !== 'N/A') partes.push(device.so)
+  return partes.join(', ') || 'N/A'
+}
+
+function normalizarStatus(status) {
+  const value = String(status || '').toLowerCase()
+  if (value === 'online' || value === 'em uso') return 'online'
+  if (value === 'offline') return 'offline'
+  return 'other'
+}
+
+function obterEmail(device) {
+  if (device?.email && device.email !== 'N/A') return device.email
+  if (!device?.usuario) return '-'
+  return `${device.usuario.toLowerCase().replace(/\\/g, '').replace(/\s/g, '.').replace(/carrarolog/g, '')}@carrarologistica.com.br`
 }
 
 export default App

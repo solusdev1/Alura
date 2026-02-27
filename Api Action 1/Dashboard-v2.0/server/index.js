@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
 import helmet from 'helmet';
@@ -19,7 +19,9 @@ import {
     getStats,
     updateSyncStatus,
     closeDB,
-    deleteDevicesByIds
+    deleteDevicesByIds,
+    updateDeviceById,
+    createDevice
 } from './database/database.js';
 
 import { updateDisplayName } from './routes/update-display-name.js';
@@ -28,24 +30,24 @@ import { saveDisplayName } from './routes/save-display-name.js';
 const app = express();
 const PORT = 3002;
 
-// 🔒 SEGURANÇA: Helmet.js - Headers de segurança
+// ðŸ”’ SEGURANÃ‡A: Helmet.js - Headers de seguranÃ§a
 app.use(helmet({
     contentSecurityPolicy: false, // Desabilitado para desenvolvimento
     crossOriginEmbedderPolicy: false
 }));
 
-// 🔒 SEGURANÇA: Rate Limiting - Prevenir abuso de API
+// ðŸ”’ SEGURANÃ‡A: Rate Limiting - Prevenir abuso de API
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // Limite de 100 requisições por IP
-    message: { error: 'Muitas requisições. Tente novamente em 15 minutos.' },
+    max: 100, // Limite de 100 requisiÃ§Ãµes por IP
+    message: { error: 'Muitas requisiÃ§Ãµes. Tente novamente em 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
 
 app.use('/api/', limiter);
 
-// 🔒 SEGURANÇA: CORS Whitelist - Apenas origens confiáveis
+// ðŸ”’ SEGURANÃ‡A: CORS Whitelist - Apenas origens confiÃ¡veis
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3002',
@@ -55,10 +57,10 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Permitir requisições sem origin (Postman, curl, etc.)
+        // Permitir requisiÃ§Ãµes sem origin (Postman, curl, etc.)
         if (!origin) return callback(null, true);
         
-        // Verificar se a origin está na whitelist
+        // Verificar se a origin estÃ¡ na whitelist
         const isAllowed = allowedOrigins.some(allowed => {
             if (allowed.includes('*')) {
                 const regex = new RegExp('^' + allowed.replace('*', '.*') + '$');
@@ -70,8 +72,8 @@ app.use(cors({
         if (isAllowed) {
             callback(null, true);
         } else {
-            console.warn(`⚠️ CORS bloqueado: ${origin}`);
-            callback(new Error('Origin não permitida pelo CORS'));
+            console.warn(`âš ï¸ CORS bloqueado: ${origin}`);
+            callback(new Error('Origin nÃ£o permitida pelo CORS'));
         }
     },
     credentials: true
@@ -81,7 +83,7 @@ app.use(express.json({ limit: '10mb' })); // Limitar tamanho do body
 
 const ACTION1_BASE_URL = 'https://app.action1.com/api/3.0';
 
-// Função auxiliar para fazer requisições GET
+// FunÃ§Ã£o auxiliar para fazer requisiÃ§Ãµes GET
 async function apiGet(url, headers) {
     const res = await fetch(url, { headers });
     const text = await res.text();
@@ -92,19 +94,19 @@ async function apiGet(url, headers) {
     }
 
     if (!contentType.includes('application/json')) {
-        throw new Error(`Resposta não JSON: ${text.substring(0, 300)}`);
+        throw new Error(`Resposta nÃ£o JSON: ${text.substring(0, 300)}`);
     }
 
     return JSON.parse(text);
 }
 
-// Função principal de sincronização
+// FunÃ§Ã£o principal de sincronizaÃ§Ã£o
 async function performSync() {
     try {
-        console.log('🔄 Iniciando sincronização com Action1...');
+        console.log('ðŸ”„ Iniciando sincronizaÃ§Ã£o com Action1...');
         updateSyncStatus('syncing', 0);
 
-        // 1️⃣ AUTENTICAÇÃO
+        // 1ï¸âƒ£ AUTENTICAÃ‡ÃƒO
         const authRes = await fetch(`${ACTION1_BASE_URL}/oauth2/token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -112,7 +114,7 @@ async function performSync() {
         });
 
         if (!authRes.ok) {
-            throw new Error(`Falha na autenticação (${authRes.status})`);
+            throw new Error(`Falha na autenticaÃ§Ã£o (${authRes.status})`);
         }
 
         const { access_token } = await authRes.json();
@@ -122,22 +124,22 @@ async function performSync() {
             Accept: 'application/json'
         };
 
-        // 2️⃣ ORGANIZAÇÕES
+        // 2ï¸âƒ£ ORGANIZAÃ‡Ã•ES
         const orgData = await apiGet(`${ACTION1_BASE_URL}/organizations`, headers);
         const organizations = orgData.items || [];
 
         if (!organizations.length) {
-            throw new Error('Nenhuma organização encontrada');
+            throw new Error('Nenhuma organizaÃ§Ã£o encontrada');
         }
 
         let todosOsEndpoints = [];
 
-        // 3️⃣ ENDPOINTS COM PAGINAÇÃO CORRETA
+        // 3ï¸âƒ£ ENDPOINTS COM PAGINAÃ‡ÃƒO CORRETA
         for (const org of organizations) {
-            console.log(`🔎 Org: ${org.name} (${org.id})`);
+            console.log(`ðŸ”Ž Org: ${org.name} (${org.id})`);
 
-            // Buscar endpoints gerenciados com paginação usando 'from'
-            console.log('   🔍 Buscando endpoints gerenciados...');
+            // Buscar endpoints gerenciados com paginaÃ§Ã£o usando 'from'
+            console.log('   ðŸ” Buscando endpoints gerenciados...');
             let managedItems = [];
             let allUniqueIds = new Set();
             let from = 0;
@@ -146,22 +148,22 @@ async function performSync() {
             
             while (hasMore) {
                 const managedUrl = `${ACTION1_BASE_URL}/endpoints/managed/${org.id}?fields=*&limit=${limit}&from=${from}`;
-                console.log(`      📄 Buscando a partir de ${from} (únicos: ${allUniqueIds.size})...`);
+                console.log(`      ðŸ“„ Buscando a partir de ${from} (Ãºnicos: ${allUniqueIds.size})...`);
                 
                 try {
                     const managedData = await apiGet(managedUrl, headers);
                     const items = managedData.items || [];
                     const totalItems = managedData.total_items || managedData.total || 0;
                     
-                    console.log(`         📊 Total na API: ${totalItems} | Retornados: ${items.length}`);
+                    console.log(`         ðŸ“Š Total na API: ${totalItems} | Retornados: ${items.length}`);
                     
                     if (items.length === 0) {
-                        console.log(`         ⚠️ Nenhum item retornado, finalizando...`);
+                        console.log(`         âš ï¸ Nenhum item retornado, finalizando...`);
                         hasMore = false;
                         break;
                     }
                     
-                    // Adicionar itens únicos
+                    // Adicionar itens Ãºnicos
                     const beforeSize = allUniqueIds.size;
                     items.forEach(item => {
                         if (!allUniqueIds.has(item.id)) {
@@ -171,17 +173,17 @@ async function performSync() {
                     });
                     
                     const newItems = allUniqueIds.size - beforeSize;
-                    console.log(`         ➕ ${newItems} novos únicos (${items.length - newItems} duplicatas)`);
+                    console.log(`         âž• ${newItems} novos Ãºnicos (${items.length - newItems} duplicatas)`);
                     
-                    // Verificar se há próxima página
+                    // Verificar se hÃ¡ prÃ³xima pÃ¡gina
                     if (managedData.next_page) {
                         // Incrementar 'from' pelo limite
                         from += limit;
-                        console.log(`         🔗 Próxima página disponível: ${managedData.next_page}`);
+                        console.log(`         ðŸ”— PrÃ³xima pÃ¡gina disponÃ­vel: ${managedData.next_page}`);
                     } else {
-                        // Verificar se já pegamos todos os itens
+                        // Verificar se jÃ¡ pegamos todos os itens
                         if (allUniqueIds.size >= totalItems || items.length < limit) {
-                            console.log(`         ✅ Todos os itens foram recuperados`);
+                            console.log(`         âœ… Todos os itens foram recuperados`);
                             hasMore = false;
                         } else {
                             from += limit;
@@ -189,17 +191,17 @@ async function performSync() {
                     }
                     
                 } catch (err) {
-                    console.log(`         ❌ Erro: ${err.message}`);
+                    console.log(`         âŒ Erro: ${err.message}`);
                     hasMore = false;
                 }
             }
             
-            console.log(`      ✅ Total gerenciados únicos encontrados: ${managedItems.length}`);
+            console.log(`      âœ… Total gerenciados Ãºnicos encontrados: ${managedItems.length}`);
             
-            // Buscar endpoints não gerenciados
+            // Buscar endpoints nÃ£o gerenciados
             let unmanagedItems = [];
             try {
-                console.log('   🔍 Buscando endpoints não gerenciados...');
+                console.log('   ðŸ” Buscando endpoints nÃ£o gerenciados...');
                 let fromUnmanaged = 0;
                 let hasMoreUnmanaged = true;
                 
@@ -222,9 +224,9 @@ async function performSync() {
                     }
                 }
                 
-                console.log(`      ✅ Total não gerenciados: ${unmanagedItems.length}`);
+                console.log(`      âœ… Total nÃ£o gerenciados: ${unmanagedItems.length}`);
             } catch (err) {
-                console.log(`   ⚠️ Não foi possível buscar endpoints não gerenciados: ${err.message}`);
+                console.log(`   âš ï¸ NÃ£o foi possÃ­vel buscar endpoints nÃ£o gerenciados: ${err.message}`);
             }
             
             // Combinar e remover duplicatas
@@ -232,7 +234,7 @@ async function performSync() {
             const items = Array.from(new Map(allItems.map(item => [item.id, item])).values());
             
             if (allItems.length !== items.length) {
-                console.log(`   🔄 Removidas ${allItems.length - items.length} duplicatas`);
+                console.log(`   ðŸ”„ Removidas ${allItems.length - items.length} duplicatas`);
             }
             
             // Contar status
@@ -240,10 +242,10 @@ async function performSync() {
             const disconnected = items.filter(d => d.status?.toLowerCase() === 'disconnected').length;
             const outros = items.filter(d => d.status?.toLowerCase() !== 'connected' && d.status?.toLowerCase() !== 'disconnected').length;
             
-            console.log(`\n   📊 TOTAL ORGANIZAÇÃO: ${items.length} dispositivos únicos`);
-            console.log(`      🟢 Connected: ${connected}`);
-            console.log(`      🔴 Disconnected: ${disconnected}`);
-            console.log(`      ⚪ Outros: ${outros}\n`);
+            console.log(`\n   ðŸ“Š TOTAL ORGANIZAÃ‡ÃƒO: ${items.length} dispositivos Ãºnicos`);
+            console.log(`      ðŸŸ¢ Connected: ${connected}`);
+            console.log(`      ðŸ”´ Disconnected: ${disconnected}`);
+            console.log(`      âšª Outros: ${outros}\n`);
 
             // Mapear dados para formato consistente
             const mapped = items.map(dev => {
@@ -280,9 +282,9 @@ async function performSync() {
                 
                 // Determinar tipo de dispositivo
                 const nomeDispositivo = dev.name || dev.device_name || '';
-                let tipoDispositivo = dev.type || 'Não especificado';
+                let tipoDispositivo = dev.type || 'NÃ£o especificado';
                 
-                // Se o nome contém SJPCRONOT, é um notebook
+                // Se o nome contÃ©m SJPCRONOT, Ã© um notebook
                 if (nomeDispositivo.includes('SJPCRONOT')) {
                     tipoDispositivo = 'Notebook';
                 } else if (dev.type === 'Endpoint') {
@@ -307,7 +309,7 @@ async function performSync() {
                     memoria: dev.RAM || getMemory() || 'N/A',
                     disco: dev.disk || getDisk() || 'N/A',
                     cpu: dev.CPU_name || dev.processor || 'N/A',
-                    gerenciado: managedItems.some(m => m.id === dev.id) ? 'Sim' : 'Não',
+                    gerenciado: managedItems.some(m => m.id === dev.id) ? 'Sim' : 'NÃ£o',
                     last_seen: dev.last_seen || null,
                     agent_version: dev.agent_version || null,
                     vulnerabilities: dev.vulnerabilities || { critical: 0, other: 0 },
@@ -319,8 +321,8 @@ async function performSync() {
             todosOsEndpoints.push(...mapped);
         }
 
-        // 4️⃣ REMOVER DUPLICATAS (priorizar Online sobre Offline)
-        console.log('🔄 Removendo duplicatas (priorizando dispositivos Online)...');
+        // 4ï¸âƒ£ REMOVER DUPLICATAS (priorizar Online sobre Offline)
+        console.log('ðŸ”„ Removendo duplicatas (priorizando dispositivos Online)...');
         const deviceMap = new Map();
         
         todosOsEndpoints.forEach(device => {
@@ -330,17 +332,17 @@ async function performSync() {
                 // Primeiro dispositivo com este nome
                 deviceMap.set(nome, device);
             } else {
-                // Já existe um dispositivo com este nome
+                // JÃ¡ existe um dispositivo com este nome
                 const existing = deviceMap.get(nome);
                 
                 // Priorizar Online sobre Offline
                 if (device.status === 'Online' && existing.status === 'Offline') {
-                    console.log(`   🔄 Substituindo ${nome}: Offline → Online`);
+                    console.log(`   ðŸ”„ Substituindo ${nome}: Offline â†’ Online`);
                     deviceMap.set(nome, device);
                 } else if (device.status === 'Online' && existing.status === 'Online') {
                     // Se ambos online, manter o mais recente
                     if (device.last_seen > existing.last_seen) {
-                        console.log(`   🔄 Substituindo ${nome}: Online (mais recente)`);
+                        console.log(`   ðŸ”„ Substituindo ${nome}: Online (mais recente)`);
                         deviceMap.set(nome, device);
                     }
                 } else if (device.status === 'Offline' && existing.status === 'Offline') {
@@ -349,7 +351,7 @@ async function performSync() {
                         deviceMap.set(nome, device);
                     }
                 }
-                // Se device é Offline e existing é Online, manter existing (não faz nada)
+                // Se device Ã© Offline e existing Ã© Online, manter existing (nÃ£o faz nada)
             }
         });
         
@@ -359,37 +361,37 @@ async function performSync() {
         const duplicatasRemovidas = totalAntes - totalDepois;
         
         if (duplicatasRemovidas > 0) {
-            console.log(`✅ ${duplicatasRemovidas} duplicatas removidas (${totalAntes} → ${totalDepois})`);
+            console.log(`âœ… ${duplicatasRemovidas} duplicatas removidas (${totalAntes} â†’ ${totalDepois})`);
         }
 
-        // 5️⃣ SALVAR NO BANCO DE DADOS
-        console.log('💾 Salvando no banco de dados...');
+        // 5ï¸âƒ£ SALVAR NO BANCO DE DADOS
+        console.log('ðŸ’¾ Salvando no banco de dados...');
         await saveDevices(todosOsEndpoints);
 
-        // Estatísticas finais
+        // EstatÃ­sticas finais
         const stats = await getStats();
         
-        console.log(`\n✅ SINCRONIZAÇÃO COMPLETA E SALVA NO BANCO`);
-        console.log(`📦 Total de dispositivos: ${stats.total}`);
-        console.log(`   🟢 Online: ${stats.online}`);
-        console.log(`   🔴 Offline: ${stats.offline}`);
-        console.log(`   ⚙️  Gerenciados: ${stats.gerenciados}\n`);
+        console.log(`\nâœ… SINCRONIZAÃ‡ÃƒO COMPLETA E SALVA NO BANCO`);
+        console.log(`ðŸ“¦ Total de dispositivos: ${stats.total}`);
+        console.log(`   ðŸŸ¢ Online: ${stats.online}`);
+        console.log(`   ðŸ”´ Offline: ${stats.offline}`);
+        console.log(`   âš™ï¸  Gerenciados: ${stats.gerenciados}\n`);
 
         return {
             success: true,
             total: stats.total,
             stats: stats,
-            message: 'Inventário sincronizado e salvo com sucesso'
+            message: 'InventÃ¡rio sincronizado e salvo com sucesso'
         };
 
     } catch (error) {
-        console.error('❌ Erro ao sincronizar:', error.message);
+        console.error('âŒ Erro ao sincronizar:', error.message);
         updateSyncStatus('error', 0);
         throw error;
     }
 }
 
-// Rota para sincronização manual
+// Rota para sincronizaÃ§Ã£o manual
 app.post('/api/sync', async (req, res) => {
     try {
         const result = await performSync();
@@ -402,7 +404,7 @@ app.post('/api/sync', async (req, res) => {
     }
 });
 
-// Rota para obter o inventário do banco de dados (offline)
+// Rota para obter o inventÃ¡rio do banco de dados (offline)
 app.get('/api/inventory', async (req, res) => {
     try {
         const devices = await getAllDevices();
@@ -425,18 +427,18 @@ app.get('/api/inventory', async (req, res) => {
     }
 });
 
-// Rota para obter inventário filtrado por status
+// Rota para obter inventÃ¡rio filtrado por status
 app.get('/api/inventory/status/:status', async (req, res) => {
     try {
         const { status } = req.params;
         
-        // 🔒 Validar e sanitizar status
+        // ðŸ”’ Validar e sanitizar status
         const validStatuses = ['online', 'offline', 'connected', 'disconnected'];
         const sanitizedStatus = status.toLowerCase().trim();
         
         if (!validStatuses.includes(sanitizedStatus)) {
             return res.status(400).json({ 
-                error: 'Status inválido',
+                error: 'Status invÃ¡lido',
                 validStatuses: validStatuses,
                 received: status
             });
@@ -457,16 +459,32 @@ app.get('/api/inventory/status/:status', async (req, res) => {
     }
 });
 
-// Rota para limpar o inventário
+// Rota para limpar o inventÃ¡rio
 app.delete('/api/inventory', async (req, res) => {
     try {
         await clearInventory();
         res.json({
             success: true,
-            message: 'Inventário limpo do banco de dados'
+            message: 'InventÃ¡rio limpo do banco de dados'
         });
     } catch (error) {
         res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Rota para criar dispositivo manual
+app.post('/api/inventory', async (req, res) => {
+    try {
+        const created = await createDevice(req.body || {});
+        res.status(201).json({
+            success: true,
+            data: created
+        });
+    } catch (error) {
+        res.status(400).json({
             success: false,
             error: error.message
         });
@@ -481,7 +499,7 @@ app.post('/api/inventory/delete', async (req, res) => {
         if (!Array.isArray(ids) || ids.length === 0) {
             return res.status(400).json({
                 success: false,
-                error: 'Lista de IDs inválida'
+                error: 'Lista de IDs invÃ¡lida'
             });
         }
 
@@ -499,10 +517,38 @@ app.post('/api/inventory/delete', async (req, res) => {
     }
 });
 
-// 🆕 Rota para atualizar Display Name do PowerShell
+// Rota para atualizar dispositivo por ID
+app.patch('/api/inventory/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body || {};
+
+        const result = await updateDeviceById(id, updates);
+
+        if (!result.matchedCount) {
+            return res.status(404).json({
+                success: false,
+                error: 'Dispositivo não encontrado'
+            });
+        }
+
+        res.json({
+            success: true,
+            modified: result.modifiedCount || 0,
+            data: result.device || null
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ðŸ†• Rota para atualizar Display Name do PowerShell
 app.post('/api/update-display-name', updateDisplayName);
 
-// 🆕 Rota para salvar Display Name direto no MongoDB (bypass Action1 API)
+// ðŸ†• Rota para salvar Display Name direto no MongoDB (bypass Action1 API)
 app.post('/api/save-display-name', saveDisplayName);
 
 // Rota para exportar CSV
@@ -510,12 +556,12 @@ app.get('/api/export/csv', async (req, res) => {
     try {
         const devices = await getAllDevices();
         
-        // Cabeçalhos CSV
+        // CabeÃ§alhos CSV
         const headers = [
-            'ID', 'Nome', 'Tipo', 'Responsável', 'Email', 'IP', 'MAC', 
-            'Sistema Operacional', 'Status', 'Organização', 'Modelo',
-            'Fabricante', 'Serial', 'Memória', 'Disco', 'CPU', 
-            'Gerenciado', 'Última Visualização', 'Versão do Agente'
+            'ID', 'Nome', 'Tipo', 'ResponsÃ¡vel', 'Email', 'IP', 'MAC',
+            'Sistema Operacional', 'Status', 'Setor', 'Cloud', 'Data AlteraÃ§Ã£o', 'OrganizaÃ§Ã£o', 'Modelo',
+            'Fabricante', 'Serial', 'MemÃ³ria', 'Disco', 'CPU',
+            'Gerenciado', 'Ãšltima VisualizaÃ§Ã£o', 'VersÃ£o do Agente'
         ];
         
         // Converter dados para CSV
@@ -536,6 +582,9 @@ app.get('/api/export/csv', async (req, res) => {
                 device.mac || 'N/A',
                 `"${(device.so || 'N/A').replace(/"/g, '""')}"`,
                 device.status || 'N/A',
+                `"${(device.setor || 'N/A').replace(/"/g, '""')}"`,
+                `"${(device.cloud || 'N/A').replace(/"/g, '""')}"`,
+                `"${(device.dataAlteracao || 'N/A').replace(/"/g, '""')}"`,
                 `"${(device.organizacao || 'N/A').replace(/"/g, '""')}"`,
                 device.modelo || 'N/A',
                 `"${(device.fabricante || 'N/A').replace(/"/g, '""')}"`,
@@ -588,14 +637,14 @@ app.get('/api/status', async (req, res) => {
     }
 });
 
-// 🕐 AGENDAMENTO: Sincronizar automaticamente 1x por dia às 03:00
+// ðŸ• AGENDAMENTO: Sincronizar automaticamente 1x por dia Ã s 03:00
 cron.schedule('0 3 * * *', async () => {
-    console.log('⏰ Sincronização automática agendada iniciada...');
+    console.log('â° SincronizaÃ§Ã£o automÃ¡tica agendada iniciada...');
     try {
         await performSync();
-        console.log('✅ Sincronização automática concluída');
+        console.log('âœ… SincronizaÃ§Ã£o automÃ¡tica concluÃ­da');
     } catch (error) {
-        console.error('❌ Erro na sincronização automática:', error.message);
+        console.error('âŒ Erro na sincronizaÃ§Ã£o automÃ¡tica:', error.message);
     }
 }, {
     timezone: "America/Sao_Paulo"
@@ -611,25 +660,25 @@ app.listen(PORT, async () => {
     const metadata = await getSyncMetadata();
     const stats = await getStats();
     
-    console.log(`🚀 Servidor v2.0 rodando em http://localhost:${PORT}`);
-    console.log(`📊 Endpoints disponíveis:`);
-    console.log(`   GET    /test                         - Página de testes`);
+    console.log(`ðŸš€ Servidor v2.0 rodando em http://localhost:${PORT}`);
+    console.log(`ðŸ“Š Endpoints disponÃ­veis:`);
+    console.log(`   GET    /test                         - PÃ¡gina de testes`);
     console.log(`   GET    /api/status                   - Status do servidor e banco`);
-    console.log(`   GET    /api/inventory                - Obter inventário (offline)`);
+    console.log(`   GET    /api/inventory                - Obter inventÃ¡rio (offline)`);
     console.log(`   GET    /api/inventory/status/:status - Filtrar por status`);
     console.log(`   POST   /api/sync                     - Sincronizar com Action1`);
     console.log(`   POST   /api/update-display-name      - Atualizar Display Name do PowerShell`);
     console.log(`   POST   /api/save-display-name        - Salvar Display Name direto no MongoDB`);
-    console.log(`   DELETE /api/inventory                - Limpar inventário`);
-    console.log(`\n💾 Banco de dados: MongoDB (local)`);
-    console.log(`⏰ Sincronização automática: Diariamente às 03:00`);
-    console.log(`📦 Dispositivos no banco: ${stats.total}`);
-    console.log(`🕐 Última sincronização: ${metadata.last_sync || 'Nunca'}`);
+    console.log(`   DELETE /api/inventory                - Limpar inventÃ¡rio`);
+    console.log(`\nðŸ’¾ Banco de dados: MongoDB (local)`);
+    console.log(`â° SincronizaÃ§Ã£o automÃ¡tica: Diariamente Ã s 03:00`);
+    console.log(`ðŸ“¦ Dispositivos no banco: ${stats.total}`);
+    console.log(`ðŸ• Ãšltima sincronizaÃ§Ã£o: ${metadata.last_sync || 'Nunca'}`);
 });
 
-// Fechar conexão ao encerrar processo
+// Fechar conexÃ£o ao encerrar processo
 process.on('SIGINT', async () => {
-    console.log('\n🛑 Encerrando servidor...');
+    console.log('\nðŸ›‘ Encerrando servidor...');
     await closeDB();
     process.exit(0);
 });

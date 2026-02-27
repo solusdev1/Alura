@@ -75,3 +75,33 @@ export async function deleteInventoryByIds(ids) {
 
     return await response.json();
 }
+
+export async function updateInventoryDevice(id, payload) {
+    const response = await fetch(`${SERVER_URL}/api/inventory/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao atualizar dispositivo');
+    }
+
+    return await response.json();
+}
+
+export async function createInventoryDevice(payload) {
+    const response = await fetch(`${SERVER_URL}/api/inventory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao criar dispositivo');
+    }
+
+    return await response.json();
+}
