@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import '../styles/App.css'
+import GerarTermoModal from './GerarTermoModal.jsx'
 import {
+  SERVER_URL,
   createInventoryDevice,
   deleteInventoryByIds,
   getInventory,
@@ -38,7 +40,7 @@ const EMPTY_CREATE = {
   descricao: '',
   hostname: '',
   perifericos: '',
-  duasTelas: 'Nao',
+  duasTelas: '',
   serial: ''
 }
 
@@ -57,6 +59,8 @@ function App() {
   const [createForm, setCreateForm] = useState(EMPTY_CREATE)
   const [detailModal, setDetailModal] = useState(null)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('themeMode') === 'dark')
+  const [selectedIds, setSelectedIds] = useState([])
+  const [termModalOpen, setTermModalOpen] = useState(false)
 
   // Carrega inventario e status do servidor para alinhar UI com backend.
   const carregarDados = async () => {
@@ -65,6 +69,7 @@ function App() {
     try {
       const dados = await getInventory()
       setDispositivos(dados)
+      setSelectedIds(prev => prev.filter(id => dados.some(device => device.id === id)))
       try {
         const status = await getServerStatus()
         setServerStatus(status || { server: 'offline' })
@@ -88,11 +93,25 @@ function App() {
   }, [darkMode])
 
   useEffect(() => {
-    const hasModalOpen = Boolean(editing || creating || selectedDevice || detailModal)
+    const hasModalOpen = Boolean(editing || creating || selectedDevice || detailModal || termModalOpen)
     if (hasModalOpen) document.body.classList.add('modal-open')
     else document.body.classList.remove('modal-open')
     return () => document.body.classList.remove('modal-open')
-  }, [editing, creating, selectedDevice, detailModal])
+  }, [editing, creating, selectedDevice, detailModal, termModalOpen])
+
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setEditing(null)
+        setCreating(false)
+        setSelectedDevice(null)
+        setDetailModal(null)
+        setTermModalOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [])
 
   const tipoOptions = useMemo(
     () => Array.from(new Set([...BASE_TIPO_OPTIONS, ...dispositivos.map(d => d.tipo).filter(Boolean)])),
@@ -121,11 +140,18 @@ function App() {
         device.email?.toLowerCase().includes(termo) ||
         device.cloud?.toLowerCase().includes(termo) ||
         device.setor?.toLowerCase().includes(termo) ||
+        device.responsavelAtualNome?.toLowerCase().includes(termo) ||
+        device.responsavelAtualDocumento?.toLowerCase().includes(termo) ||
         device.ip?.toLowerCase().includes(termo) ||
         device.organizacao?.toLowerCase().includes(termo)
       return matchTipo && matchStatus && matchBusca
     })
   }, [dispositivos, filtroTipo, filtroStatus, busca])
+
+  const selectedDevices = useMemo(
+    () => dispositivos.filter(device => selectedIds.includes(device.id)),
+    [dispositivos, selectedIds]
+  )
 
   const statsTop = useMemo(() => ({
     total: dispositivos.length,
@@ -308,7 +334,35 @@ function App() {
     }
   }
 
-  const exportarCSV = () => window.open('http://localhost:3002/api/export/csv', '_blank')
+  const exportarCSV = () => window.open(`${SERVER_URL}/api/export/csv`, '_blank')
+
+  const toggleDeviceSelection = (deviceId) => {
+    setSelectedIds(prev =>
+      prev.includes(deviceId) ? prev.filter(id => id !== deviceId) : [...prev, deviceId]
+    )
+  }
+
+  const toggleSetorSelection = (items) => {
+    const ids = items.map(device => device.id)
+    const allSelected = ids.every(id => selectedIds.includes(id))
+    setSelectedIds(prev => {
+      if (allSelected) {
+        return prev.filter(id => !ids.includes(id))
+      }
+      return Array.from(new Set([...prev, ...ids]))
+    })
+  }
+
+  const abrirTermoModal = () => {
+    if (selectedIds.length === 0) return
+    setTermModalOpen(true)
+  }
+
+  const handleTermGenerated = async () => {
+    setTermModalOpen(false)
+    setSelectedIds([])
+    await carregarDados()
+  }
 
   const exportarDetalheCSV = (nome, linhas, headers) => {
     const csv = [headers.join(','), ...linhas.map(row => headers.map(h => `"${String(row[h] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n')
@@ -332,7 +386,7 @@ function App() {
             </div>
             <div className="hero-actions">
               <button className="theme-toggle" onClick={() => setDarkMode(prev => !prev)}>{darkMode ? 'Modo claro' : 'Modo noturno'}</button>
-              <button className="hero-action" onClick={handleSync} disabled={loading}>CONNECTED</button>
+              <button className="hero-action" onClick={handleSync} disabled={loading}>{loading ? 'Sincronizando...' : 'Sincronizar'}</button>
             </div>
           </div>
 
@@ -358,6 +412,9 @@ function App() {
               <option value="Offline">Offline</option>
               <option value="Em Uso">Em Uso</option>
             </select>
+            <button className="btn-term-top" onClick={abrirTermoModal} disabled={selectedIds.length === 0}>
+              {selectedIds.length > 0 ? `Gerar termo (${selectedIds.length})` : 'Gerar termo'}
+            </button>
             <button className="btn-export-top" onClick={exportarCSV}>Exportar CSV</button>
             <button className="btn-add-top" onClick={abrirCriacao}>Adicionar equipamento</button>
           </div>
@@ -387,14 +444,30 @@ function App() {
               <table className="inventory-table">
                 <thead>
                   <tr>
+                    <th className="check-col">
+                      <input
+                        type="checkbox"
+                        checked={items.length > 0 && items.every(device => selectedIds.includes(device.id))}
+                        onChange={() => toggleSetorSelection(items)}
+                        aria-label={`Selecionar setor ${setor}`}
+                      />
+                    </th>
                     <th>Tipo</th><th>Responsavel</th><th>Email</th><th>Cloud</th><th>Descricao</th><th>Status</th><th>Localizacao</th><th>Ultima alteracao</th><th>Acoes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map(device => (
                     <tr key={device.id} className="row-clickable" onClick={() => setSelectedDevice(device)}>
+                      <td className="check-col" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(device.id)}
+                          onChange={() => toggleDeviceSelection(device.id)}
+                          aria-label={`Selecionar ${device.nome || device.id}`}
+                        />
+                      </td>
                       <td>{device.tipo || '-'}</td>
-                      <td>{device.adDisplayName || device.usuario || '-'}</td>
+                      <td>{getDisplayResponsible(device)}</td>
                       <td>{obterEmail(device)}</td>
                       <td>{device.cloud || '-'}</td>
                       <td>{device.descricao || formatarDescricao(device)}</td>
@@ -419,7 +492,7 @@ function App() {
           <div className="edit-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Detalhes do Equipamento</h3>
             <p><strong>Tipo:</strong> {selectedDevice.tipo || '-'}</p>
-            <p><strong>Responsavel:</strong> {selectedDevice.adDisplayName || selectedDevice.usuario || '-'}</p>
+            <p><strong>Responsavel:</strong> {getDisplayResponsible(selectedDevice)}</p>
             <p><strong>Email:</strong> {obterEmail(selectedDevice)}</p>
             <p><strong>Cloud:</strong> {selectedDevice.cloud || '-'}</p>
             <p><strong>Descricao:</strong> {selectedDevice.descricao || formatarDescricao(selectedDevice)}</p>
@@ -439,8 +512,18 @@ function App() {
             <label>Responsavel<input value={editForm.adDisplayName} onChange={(e) => setEditForm(prev => ({ ...prev, adDisplayName: e.target.value }))} /></label>
             <label>Email<input value={editForm.email} onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))} /></label>
             <label>Cloud<input value={editForm.cloud} onChange={(e) => setEditForm(prev => ({ ...prev, cloud: e.target.value }))} /></label>
-            <label>Setor<input value={editForm.setor} onChange={(e) => setEditForm(prev => ({ ...prev, setor: e.target.value }))} /></label>
-            <label>Localizacao<input value={editForm.city} onChange={(e) => setEditForm(prev => ({ ...prev, city: e.target.value }))} /></label>
+            <label>Setor
+              <select value={editForm.setor} onChange={(e) => setEditForm(prev => ({ ...prev, setor: e.target.value }))}>
+                <option value="">Selecione</option>
+                {setorOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </label>
+            <label>Localizacao
+              <select value={editForm.city} onChange={(e) => setEditForm(prev => ({ ...prev, city: e.target.value }))}>
+                <option value="">Selecione</option>
+                {cityOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </label>
             <label>Status<select value={editForm.status} onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}><option value="Online">Online</option><option value="Offline">Offline</option><option value="Em Uso">Em Uso</option></select></label>
             <label>Data alteracao<input value={editForm.dataAlteracao} onChange={(e) => setEditForm(prev => ({ ...prev, dataAlteracao: e.target.value }))} /></label>
             <label>Descricao<textarea rows="2" value={editForm.descricao} onChange={(e) => setEditForm(prev => ({ ...prev, descricao: e.target.value }))} /></label>
@@ -478,7 +561,7 @@ function App() {
             <label>Perifericos<input value={createForm.perifericos} onChange={(e) => setCreateForm(prev => ({ ...prev, perifericos: e.target.value }))} /></label>
             <label>Chamadas Duas Telas
               <select value={createForm.duasTelas} onChange={(e) => setCreateForm(prev => ({ ...prev, duasTelas: e.target.value }))}>
-                <option value="Nao">Selecione</option>
+                <option value="">Selecione</option>
                 <option value="Sim">Sim</option>
                 <option value="Nao">Nao</option>
               </select>
@@ -489,6 +572,13 @@ function App() {
           </form>
         </div>
       )}
+
+      <GerarTermoModal
+        open={termModalOpen}
+        onClose={() => setTermModalOpen(false)}
+        devices={selectedDevices}
+        onGenerated={handleTermGenerated}
+      />
 
       {detailModal === 'aparelhos' && (
         <div className="modal-overlay" onClick={() => setDetailModal(null)}>
@@ -565,9 +655,14 @@ function formatarDescricao(device) {
 
 function normalizarStatus(status) {
   const value = String(status || '').toLowerCase()
-  if (value === 'online' || value === 'em uso') return 'online'
+  if (value === 'online') return 'online'
+  if (value === 'em uso') return 'emuso'
   if (value === 'offline') return 'offline'
   return 'other'
+}
+
+function getDisplayResponsible(device) {
+  return device?.responsavelAtualNome || device?.adDisplayName || device?.usuario || '-'
 }
 
 // Usa email salvo; se ausente, deriva padrao corporativo pelo usuario.

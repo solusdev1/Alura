@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Carregar variáveis de ambiente
-dotenv.config({ path: join(__dirname, '../../.env') });
+dotenv.config({ path: join(__dirname, '../../.env'), override: true });
 
 // Configuração do MongoDB (Nuvem ou Local)
 // Prioridade: 1. Variável de ambiente, 2. MongoDB local
@@ -85,7 +85,17 @@ function getSupplementalMatch(device, indexes) {
 
 function applySupplementalFields(apiDevice, existingDevice, supplementalDevice) {
     const merged = { ...apiDevice };
-    const fields = ['cloud', 'setor', 'dataAlteracao'];
+    const fields = [
+        'cloud',
+        'setor',
+        'dataAlteracao',
+        'responsavelAtualId',
+        'responsavelAtualNome',
+        'responsavelAtualDocumento',
+        'responsavelAtualCargo',
+        'termoAtualId',
+        'termoAtualVersion'
+    ];
 
     fields.forEach(field => {
         if (isNonEmpty(existingDevice?.[field])) {
@@ -104,12 +114,13 @@ function applySupplementalFields(apiDevice, existingDevice, supplementalDevice) 
     return merged;
 }
 
-function supplementalToDevice(item) {
-    const nome = item.nome || `Dispositivo-${item.id || Math.random().toString(36).slice(2)}`;
+function supplementalToDevice(item, index = 0) {
+    const tipo = item.tipo || 'Desconhecido';
+    const nome = item.nome || item.responsavel || `${tipo}-${index}`;
     const responsavel = item.responsavel || 'N/A';
 
     return {
-        id: item.id || `manual-${normalizeKey(nome)}`,
+        id: item.id || `manual-${normalizeKey(tipo)}-${index}`,
         nome,
         dispositivo: nome,
         ip: item.ip || 'N/A',
@@ -153,11 +164,16 @@ function mergeDevicesWithSupplemental(apiDevices, existingDevices) {
     const existingIds = new Set(mergedApi.map(d => String(d.id)));
     const existingNames = new Set(mergedApi.map(d => normalizeKey(d.nome)));
 
-    const extras = supplemental
-        .filter(item => EXTRA_DEVICE_TYPES.has(normalizeKey(item.tipo)))
-        .filter(item => !existingIds.has(String(item.id || '')))
-        .filter(item => !existingNames.has(normalizeKey(item.nome)))
-        .map(supplementalToDevice);
+    // Generate device first (deterministic id/nome), then filter to avoid re-adding existing extras
+    const extras = [];
+    let extraIdx = 0;
+    for (const item of supplemental) {
+        if (!EXTRA_DEVICE_TYPES.has(normalizeKey(item.tipo))) continue;
+        const device = supplementalToDevice(item, extraIdx++);
+        if (!existingIds.has(String(device.id)) && !existingNames.has(normalizeKey(device.nome))) {
+            extras.push(device);
+        }
+    }
 
     if (extras.length > 0) {
         console.log(`   ✅ ${extras.length} dispositivos extras adicionados do suplemento`);
@@ -330,42 +346,36 @@ export async function getAllDevices() {
     if (useJSON) {
         try {
             const data = fs.readFileSync(DB_PATH, 'utf-8');
-            const parsed = JSON.parse(data);
-            const merged = mergeDevicesWithSupplemental(parsed, parsed);
-            if (merged.length !== parsed.length) {
-                fs.writeFileSync(DB_PATH, JSON.stringify(merged, null, 2));
-            }
-            return merged;
+            return JSON.parse(data);
         } catch (error) {
             return [];
         }
     }
-    
+
     try {
         const database = await getDB();
-        const devices = await database.collection(COLLECTION_DEVICES)
-            .find({})
-            .toArray();
-        const merged = mergeDevicesWithSupplemental(devices, devices);
-
-        if (merged.length !== devices.length) {
-            const existingIds = new Set(devices.map(d => String(d.id)));
-            const missing = merged.filter(d => !existingIds.has(String(d.id)));
-            if (missing.length > 0) {
-                try {
-                    await database.collection(COLLECTION_DEVICES).insertMany(missing, { ordered: false });
-                } catch (error) {
-                    // Ignorar duplicados eventuais em leitura concorrente.
-                    if (error.code !== 11000) {
-                        throw error;
-                    }
-                }
-            }
-        }
-
-        return merged;
+        return await database.collection(COLLECTION_DEVICES).find({}).toArray();
     } catch (error) {
         console.error('❌ Erro ao obter dispositivos:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Obter dispositivos por uma lista de IDs
+ */
+export async function getDevicesByIds(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return [];
+    }
+
+    const normalizedIds = new Set(ids.map(id => String(id)));
+
+    try {
+        const devices = await getAllDevices();
+        return devices.filter(device => normalizedIds.has(String(device.id)));
+    } catch (error) {
+        console.error('âŒ Erro ao obter dispositivos por IDs:', error.message);
         return [];
     }
 }
@@ -529,7 +539,9 @@ export async function updateDeviceById(id, updates) {
         'nome', 'tipo', 'usuario', 'adDisplayName', 'email', 'cloud', 'setor',
         'city', 'status', 'dataAlteracao', 'descricao', 'memoria', 'disco', 'so',
         'organizacao', 'serial', 'ip', 'mac', 'fabricante', 'modelo', 'cpu',
-        'hostname', 'perifericos', 'duasTelas'
+        'hostname', 'perifericos', 'duasTelas', 'responsavelAtualId',
+        'responsavelAtualNome', 'responsavelAtualDocumento', 'responsavelAtualCargo',
+        'termoAtualId', 'termoAtualVersion'
     ]);
 
     const sanitized = {};
@@ -592,7 +604,9 @@ export async function createDevice(payload) {
         'id', 'nome', 'tipo', 'usuario', 'adDisplayName', 'email', 'cloud', 'setor',
         'city', 'status', 'dataAlteracao', 'descricao', 'memoria', 'disco', 'so',
         'organizacao', 'serial', 'ip', 'mac', 'fabricante', 'modelo', 'cpu',
-        'hostname', 'perifericos', 'duasTelas'
+        'hostname', 'perifericos', 'duasTelas', 'responsavelAtualId',
+        'responsavelAtualNome', 'responsavelAtualDocumento', 'responsavelAtualCargo',
+        'termoAtualId', 'termoAtualVersion'
     ]);
 
     const sanitized = {};
@@ -616,6 +630,12 @@ export async function createDevice(payload) {
         setor: sanitized.setor || '',
         city: sanitized.city || '',
         status: sanitized.status || 'Em Uso',
+        responsavelAtualId: sanitized.responsavelAtualId || '',
+        responsavelAtualNome: sanitized.responsavelAtualNome || '',
+        responsavelAtualDocumento: sanitized.responsavelAtualDocumento || '',
+        responsavelAtualCargo: sanitized.responsavelAtualCargo || '',
+        termoAtualId: sanitized.termoAtualId || '',
+        termoAtualVersion: sanitized.termoAtualVersion ?? null,
         dataAlteracao: sanitized.dataAlteracao || '',
         descricao: sanitized.descricao || 'N/A',
         memoria: sanitized.memoria || 'N/A',
@@ -657,6 +677,72 @@ export async function createDevice(payload) {
 
     await collection.insertOne(device);
     return device;
+}
+
+/**
+ * Atualizar vínculo atual de vários dispositivos
+ */
+export async function updateDevicesCurrentAssignment(ids, assignment) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return { matchedCount: 0, modifiedCount: 0 };
+    }
+
+    const normalizedIds = ids.map(id => String(id));
+    const payload = {
+        responsavelAtualId: assignment?.responsavelAtualId || '',
+        responsavelAtualNome: assignment?.responsavelAtualNome || '',
+        responsavelAtualDocumento: assignment?.responsavelAtualDocumento || '',
+        responsavelAtualCargo: assignment?.responsavelAtualCargo || '',
+        termoAtualId: assignment?.termoAtualId || '',
+        termoAtualVersion: assignment?.termoAtualVersion ?? null,
+        updatedAt: new Date().toISOString()
+    };
+
+    if (useJSON) {
+        try {
+            const raw = fs.readFileSync(DB_PATH, 'utf-8');
+            const devices = JSON.parse(raw);
+            let modifiedCount = 0;
+
+            const nextDevices = devices.map(device => {
+                if (!normalizedIds.includes(String(device.id))) {
+                    return device;
+                }
+
+                modifiedCount += 1;
+                return { ...device, ...payload };
+            });
+
+            fs.writeFileSync(DB_PATH, JSON.stringify(nextDevices, null, 2));
+
+            return {
+                matchedCount: modifiedCount,
+                modifiedCount,
+                devices: nextDevices.filter(device => normalizedIds.includes(String(device.id)))
+            };
+        } catch (error) {
+            console.error('âŒ Erro ao atualizar vínculo atual (JSON):', error.message);
+            return { matchedCount: 0, modifiedCount: 0 };
+        }
+    }
+
+    try {
+        const database = await getDB();
+        const collection = database.collection(COLLECTION_DEVICES);
+        const result = await collection.updateMany(
+            { id: { $in: normalizedIds } },
+            { $set: payload }
+        );
+
+        return {
+            matchedCount: result.matchedCount || 0,
+            modifiedCount: result.modifiedCount || 0,
+            devices: await collection.find({ id: { $in: normalizedIds } }).toArray()
+        };
+    } catch (error) {
+        console.error('âŒ Erro ao atualizar vínculo atual:', error.message);
+        return { matchedCount: 0, modifiedCount: 0 };
+    }
 }
 
 /**

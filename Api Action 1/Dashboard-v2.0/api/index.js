@@ -1,31 +1,68 @@
 // Vercel Serverless Function - API Handler
-import { MongoClient } from 'mongodb';
+import {
+    clearInventory,
+    createDevice,
+    deleteDevicesByIds,
+    getAllDevices,
+    getDevicesByStatus,
+    getSyncMetadata,
+    updateDeviceById
+} from '../server/database/database.js';
+import { runInventorySync } from '../server/lib/inventory-sync.js';
+import {
+    generateTermo,
+    getGeneratedTerm,
+    listGeneratedTerms,
+    previewTermo,
+    searchResponsaveis
+} from '../server/lib/termos-service.js';
 
-const MONGO_URI = process.env.MONGODB_URI;
-const DB_NAME = process.env.MONGODB_DATABASE || 'action1_inventory';
-
-// 🔒 SEGURANÇA: CORS Whitelist
 const ALLOWED_ORIGINS = [
     'https://inventario-two-gamma.vercel.app',
     'http://localhost:5173',
     'http://localhost:3002'
 ];
 
-let cachedClient = null;
-let cachedDb = null;
+function readBody(req) {
+    if (!req.body) return {};
+    if (typeof req.body === 'string') {
+        try {
+            return JSON.parse(req.body);
+        } catch {
+            return {};
+        }
+    }
+    return req.body;
+}
 
-async function connectDB() {
-    if (cachedDb) {
-        return cachedDb;
+function sanitizeStatus(rawStatus) {
+    const validStatuses = ['online', 'offline', 'connected', 'disconnected'];
+    const normalized = String(rawStatus || '').toLowerCase().trim();
+    return validStatuses.includes(normalized) ? normalized : null;
+}
+
+function extractPath(req) {
+    const path = (req.url || '').split('?')[0] || '/';
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return normalizedPath.startsWith('/api/')
+        ? normalizedPath.slice(4)
+        : normalizedPath === '/api'
+            ? '/'
+            : normalizedPath;
+}
+
+function getQueryParam(req, key) {
+    if (req.query && typeof req.query[key] !== 'undefined') {
+        return req.query[key];
     }
 
-    const client = await MongoClient.connect(MONGO_URI);
-    const db = client.db(DB_NAME);
+    const queryString = (req.url || '').split('?')[1] || '';
+    const params = new URLSearchParams(queryString);
+    return params.get(key);
+}
 
-    cachedClient = client;
-    cachedDb = db;
-
-    return db;
+function json(res, status, payload) {
+    return res.status(status).json(payload);
 }
 
 export default async function handler(req, res) {
@@ -51,90 +88,138 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // Parse the path - Vercel adiciona ?path= como query param
-    const urlParts = req.url.split('?');
-    const path = urlParts[0] || '';
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    const cleanPath = extractPath(req);
 
     try {
-        // Status endpoint
-        if (cleanPath === '/' || cleanPath === '/status' || cleanPath.includes('status')) {
-            const db = await connectDB();
-            const devices = await db.collection('devices').find({}).toArray();
-            const metadata = await db.collection('metadata').findOne({});
+        if (req.method === 'GET' && (cleanPath === '/' || cleanPath === '/status')) {
+            const devices = await getAllDevices();
+            const metadata = await getSyncMetadata();
 
-            return res.status(200).json({
+            return json(res, 200, {
                 server: 'online',
                 database: 'connected',
                 totalDevices: devices.length,
-                lastSync: metadata?.lastSync || null,
+                lastSync: metadata?.last_sync || metadata?.lastSync || null,
+                syncStatus: metadata?.status || 'unknown',
                 environment: 'vercel'
             });
         }
 
-        // Inventory by status
-        if (cleanPath.includes('/inventory/status/')) {
+        if (req.method === 'POST' && cleanPath === '/sync') {
+            const syncSecret = process.env.SYNC_SECRET || '';
+            const providedSecret = req.headers['x-sync-secret']
+                || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+
+            if (syncSecret && providedSecret !== syncSecret) {
+                return json(res, 401, { error: 'SYNC_UNAUTHORIZED' });
+            }
+
+            const result = await runInventorySync();
+            return json(res, 200, result);
+        }
+
+        if (req.method === 'GET' && cleanPath.startsWith('/inventory/status/')) {
             const parts = cleanPath.split('/').filter(p => p);
             const status = parts[parts.length - 1];
-            
-            // 🔒 Validar e sanitizar status
-            const validStatuses = ['online', 'offline', 'connected', 'disconnected'];
-            const sanitizedStatus = status.toLowerCase().trim();
-            
-            if (!validStatuses.includes(sanitizedStatus)) {
-                return res.status(400).json({ 
+            const sanitizedStatus = sanitizeStatus(status);
+
+            if (!sanitizedStatus) {
+                return json(res, 400, {
                     error: 'Status inválido',
-                    validStatuses: validStatuses,
+                    validStatuses: ['online', 'offline', 'connected', 'disconnected'],
                     received: status
                 });
             }
-            
-            // Sanitizar para prevenir ReDoS
-            const escapedStatus = sanitizedStatus.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const db = await connectDB();
-            const devices = await db.collection('devices')
-                .find({ status: new RegExp(escapedStatus, 'i') })
-                .toArray();
-            return res.status(200).json({ data: devices });
+
+            const devices = await getDevicesByStatus(sanitizedStatus);
+            return json(res, 200, { data: devices });
         }
 
-        // Inventory delete by IDs
-        if (req.method === 'POST' && cleanPath.includes('/inventory/delete')) {
-            let body = req.body;
-            if (typeof body === 'string') {
-                try { body = JSON.parse(body); } catch { body = {}; }
-            }
-            const ids = body?.ids;
+        if (req.method === 'POST' && cleanPath === '/inventory/delete') {
+            const body = readBody(req);
+            const ids = body.ids;
             if (!Array.isArray(ids) || ids.length === 0) {
-                return res.status(400).json({ error: 'Lista de IDs inválida' });
+                return json(res, 400, { error: 'Lista de IDs inválida' });
             }
 
-            const db = await connectDB();
-            const result = await db.collection('devices').deleteMany({ id: { $in: ids } });
-
-            await db.collection('metadata').updateOne(
-                { _id: 'sync_info' },
-                {
-                    $set: {
-                        last_sync: new Date().toISOString(),
-                        total_devices: await db.collection('devices').countDocuments(),
-                        status: 'manual_delete'
-                    }
-                },
-                { upsert: true }
-            );
-
-            return res.status(200).json({ success: true, deleted: result.deletedCount || 0 });
+            const result = await deleteDevicesByIds(ids);
+            return json(res, 200, { success: true, deleted: result.deletedCount || 0 });
         }
 
-        // Inventory endpoint
-        if (cleanPath.includes('/inventory')) {
-            const db = await connectDB();
-            const devices = await db.collection('devices').find({}).toArray();
-            return res.status(200).json({ data: devices });
+        if (req.method === 'DELETE' && cleanPath === '/inventory') {
+            await clearInventory();
+            return json(res, 200, { success: true });
         }
 
-        return res.status(404).json({ 
+        if (req.method === 'POST' && cleanPath === '/inventory') {
+            const payload = readBody(req);
+            const device = await createDevice(payload);
+            return json(res, 201, { success: true, data: device });
+        }
+
+        if (req.method === 'PATCH' && cleanPath.startsWith('/inventory/')) {
+            const id = decodeURIComponent(cleanPath.replace('/inventory/', ''));
+            const payload = readBody(req);
+            const result = await updateDeviceById(id, payload);
+
+            if (!result.matchedCount) {
+                return json(res, 404, { error: 'DEVICE_NOT_FOUND' });
+            }
+
+            return json(res, 200, { success: true, data: result.device });
+        }
+
+        if (req.method === 'GET' && cleanPath === '/inventory') {
+            const devices = await getAllDevices();
+            return json(res, 200, { data: devices });
+        }
+
+        if (req.method === 'GET' && cleanPath === '/termos/responsaveis') {
+            const query = getQueryParam(req, 'q') || '';
+            const items = await searchResponsaveis(query);
+            return json(res, 200, { success: true, data: items });
+        }
+
+        if (req.method === 'POST' && cleanPath === '/termos/preview') {
+            const payload = readBody(req);
+            const data = await previewTermo(payload);
+            return json(res, 200, { success: true, data });
+        }
+
+        if (req.method === 'POST' && cleanPath === '/termos/generate') {
+            const payload = readBody(req);
+            const data = await generateTermo(payload);
+            return json(res, 201, { success: true, data });
+        }
+
+        if (req.method === 'GET' && cleanPath === '/termos') {
+            const query = getQueryParam(req, 'q') || '';
+            const items = await listGeneratedTerms(query);
+            return json(res, 200, { success: true, data: items });
+        }
+
+        if (req.method === 'GET' && cleanPath.startsWith('/termos/')) {
+            const [, termosSegment, id, action] = cleanPath.split('/');
+            if (termosSegment !== 'termos' || !id) {
+                return json(res, 404, { error: 'Endpoint not found', received: cleanPath, originalUrl: req.url });
+            }
+
+            const term = await getGeneratedTerm(id);
+            if (!term) {
+                return json(res, 404, { success: false, error: 'TERM_NOT_FOUND' });
+            }
+
+            if (action === 'download') {
+                const buffer = Buffer.from(term.documentBase64, 'base64');
+                res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+                res.setHeader('Content-Disposition', `attachment; filename="${term.fileName}"`);
+                return res.status(200).send(buffer);
+            }
+
+            return json(res, 200, { success: true, data: term });
+        }
+
+        return json(res, 404, {
             error: 'Endpoint not found',
             received: cleanPath,
             originalUrl: req.url
@@ -142,9 +227,9 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('API Error:', error);
-        return res.status(500).json({ 
+        return json(res, 500, {
             error: error.message,
-            hint: 'Check environment variables: MONGODB_URI and MONGODB_DATABASE'
+            hint: 'Check environment variables and serverless logs'
         });
     }
 }

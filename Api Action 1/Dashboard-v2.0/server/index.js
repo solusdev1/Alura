@@ -26,6 +26,7 @@ import {
 
 import { updateDisplayName } from './routes/update-display-name.js';
 import { saveDisplayName } from './routes/save-display-name.js';
+import termosRouter from './routes/termos.js';
 
 // Entrada principal da API: seguranca, sincronizacao e rotas de CRUD.
 const app = express();
@@ -251,13 +252,13 @@ async function performSync() {
 
             // Mapear dados para formato consistente
             const mapped = items.map(dev => {
-                const hw = dev.hardware || {};
+                const hw = dev.hardware_summary || dev.hardware || {};
                 const inv = dev.inventory || {};
 
                 const custom = dev.custom || [];
-                const adDisplayName = 
-                custom.find(c => c.name === 'AD Display Name')?.value || '';
-            
+                const adDisplayName = custom.find(c => c.name === 'AD Display Name')?.value || '';
+                const city = custom.find(c => c.name === 'City')?.value || '';
+
                 const getMemory = () =>
                     dev.memory_total ??
                     dev.memory_size ??
@@ -265,7 +266,7 @@ async function performSync() {
                     hw.memory_size ??
                     inv.memory?.total ??
                     null;
-            
+
                 const getDisk = () =>
                     dev.storage_total ??
                     dev.storage_total_size ??
@@ -299,18 +300,19 @@ async function performSync() {
                     dispositivo: dev.device_name || dev.name || 'N/A',
                     ip: dev.address || 'N/A',
                     mac: dev.MAC || 'N/A',
-                    so: dev.OS || 'N/A',
-                    usuario: (dev.user || 'N/A').replace(/\\/g, '/'),
+                    so: dev.OS || dev.os || dev.operating_system || 'N/A',
+                    usuario: (dev.user || dev.last_logged_in_user || 'N/A').replace(/\\/g, '/'),
                     adDisplayName,
+                    city,
                     status: statusNormalizado,
                     organizacao: org.name,
                     tipo: tipoDispositivo,
-                    // modelo: dev.CPU_model || dev.CPUmodel || dev.hardware_model || 'N/A',
+                    modelo: dev.model || hw.model || 'N/A',
                     fabricante: dev.manufacturer || 'N/A',
                     serial: dev.serial || 'N/A',
                     memoria: dev.RAM || getMemory() || 'N/A',
                     disco: dev.disk || getDisk() || 'N/A',
-                    cpu: dev.CPU_name || dev.processor || 'N/A',
+                    cpu: dev.CPU_name || dev.CPU_model || hw.processor || inv.processor?.name || 'N/A',
                     gerenciado: managedItems.some(m => m.id === dev.id) ? 'Sim' : 'NÃ£o',
                     last_seen: dev.last_seen || null,
                     agent_version: dev.agent_version || null,
@@ -554,6 +556,7 @@ app.post('/api/update-display-name', updateDisplayName);
 
 // ðŸ†• Rota para salvar Display Name direto no MongoDB (bypass Action1 API)
 app.post('/api/save-display-name', saveDisplayName);
+app.use('/api/termos', termosRouter);
 
 // Rota para exportar CSV
 // Endpoint CSV usado pela UI e por planilhas externas.

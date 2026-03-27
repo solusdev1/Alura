@@ -2,7 +2,7 @@
 // Detecta automaticamente se está em produção (Vercel) ou desenvolvimento (local)
 // Camada HTTP do frontend.
 // Centraliza URLs de endpoint e tratamento de erros.
-const SERVER_URL = import.meta.env.PROD 
+export const SERVER_URL = import.meta.env.PROD
     ? '' // Vercel usa mesma origem
     : 'http://localhost:3002';
 
@@ -107,6 +107,47 @@ export async function createInventoryDevice(payload) {
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Erro ao criar dispositivo');
+    }
+
+    return await response.json();
+}
+
+export async function searchTermResponsaveis(query = '') {
+    const response = await fetch(`${SERVER_URL}/api/termos/responsaveis?q=${encodeURIComponent(query)}`);
+
+    if (!response.ok) {
+        throw new Error('Erro ao buscar responsaveis');
+    }
+
+    const result = await response.json();
+    return result.data || [];
+}
+
+export async function previewTermo(payload) {
+    const response = await fetch(`${SERVER_URL}/api/termos/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao gerar pre-visualizacao do termo');
+    }
+
+    return await response.json();
+}
+
+export async function generateTermo(payload) {
+    const response = await fetch(`${SERVER_URL}/api/termos/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao gerar termo');
     }
 
     return await response.json();
