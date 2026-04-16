@@ -3,6 +3,10 @@ import {
     generateTermForUserSnapshot
 } from './termo-responsabilidade.js';
 import {
+    getEmailFailureSummary,
+    sendGeneratedTermEmail
+} from './m365-mail.js';
+import {
     buildTermsRepository,
     getTermById,
     listTerms,
@@ -64,7 +68,8 @@ export async function generateTermo(payload = {}) {
         responsavel,
         deviceIds = [],
         metadata = {},
-        tipoTemplate
+        tipoTemplate,
+        sendEmail = false
     } = payload;
 
     const equipamentos = await resolveEquipamentos(deviceIds);
@@ -92,6 +97,32 @@ export async function generateTermo(payload = {}) {
         }
     );
 
+    let emailSent = false;
+    let emailRecipient = null;
+    let emailError = null;
+
+    if (sendEmail) {
+        try {
+            const mailResult = await sendGeneratedTermEmail({
+                context: result.context,
+                renderedDocument: result.renderedDocument
+            });
+            emailSent = true;
+            emailRecipient = mailResult.recipientEmail;
+        } catch (error) {
+            emailError = getEmailFailureSummary(error);
+            console.error('Term email send failed:', {
+                termId: term._id,
+                fileName: term.fileName,
+                responsavelId: result.context?.responsavel?.id,
+                responsavelNome: result.context?.responsavel?.nome,
+                message: error?.message,
+                code: error?.code,
+                stack: error?.stack
+            });
+        }
+    }
+
     return {
         termId: term._id,
         version: term.version,
@@ -99,8 +130,59 @@ export async function generateTermo(payload = {}) {
         unchanged: false,
         responsavel: result.context.responsavel,
         items: result.context.itens,
-        downloadUrl: `/api/termos/${term._id}/download`
+        downloadUrl: `/api/termos/${term._id}/download`,
+        emailRequested: Boolean(sendEmail),
+        emailSent,
+        emailRecipient,
+        emailError
     };
+}
+
+export async function sendTermoEmail(termId) {
+    const term = await getTermById(termId);
+
+    if (!term) {
+        throw new Error('TERM_NOT_FOUND');
+    }
+
+    const documentBase64 = String(term.documentBase64 || '').trim();
+    if (!documentBase64) {
+        throw new Error('TERM_DOCUMENT_NOT_FOUND');
+    }
+
+    try {
+        const mailResult = await sendGeneratedTermEmail({
+            context: term.contextSnapshot || {},
+            renderedDocument: {
+                fileName: term.fileName || 'Termo.docx',
+                buffer: Buffer.from(documentBase64, 'base64')
+            }
+        });
+
+        return {
+            termId: term._id,
+            emailRequested: true,
+            emailSent: true,
+            emailRecipient: mailResult.recipientEmail,
+            emailError: null
+        };
+    } catch (error) {
+        console.error('Stored term email send failed:', {
+            termId: term._id,
+            fileName: term.fileName,
+            message: error?.message,
+            code: error?.code,
+            stack: error?.stack
+        });
+
+        return {
+            termId: term._id,
+            emailRequested: true,
+            emailSent: false,
+            emailRecipient: null,
+            emailError: getEmailFailureSummary(error)
+        };
+    }
 }
 
 export async function listGeneratedTerms(query = '') {
@@ -110,4 +192,3 @@ export async function listGeneratedTerms(query = '') {
 export async function getGeneratedTerm(id) {
     return getTermById(id);
 }
-

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { SERVER_URL, generateTermo, previewTermo, searchTermResponsaveis } from '../services/api.js'
+import { SERVER_URL, generateTermo, previewTermo, searchTermResponsaveis, sendTermoEmail } from '../services/api.js'
 
 const EMPTY_RESPONSAVEL = {
   nome: '',
@@ -15,7 +15,9 @@ function GerarTermoModal({ open, onClose, devices, onGenerated }) {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const [loadingPreview, setLoadingPreview] = useState(false)
   const [loadingSubmit, setLoadingSubmit] = useState(false)
+  const [loadingSendEmail, setLoadingSendEmail] = useState(false)
   const [preview, setPreview] = useState(null)
+  const [submitResult, setSubmitResult] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -25,6 +27,7 @@ function GerarTermoModal({ open, onClose, devices, onGenerated }) {
     setSearch('')
     setSuggestions([])
     setPreview(null)
+    setSubmitResult(null)
     setError('')
   }, [open])
 
@@ -83,6 +86,7 @@ function GerarTermoModal({ open, onClose, devices, onGenerated }) {
 
   const handlePreview = async () => {
     setError('')
+    setSubmitResult(null)
     setLoadingPreview(true)
     try {
       const result = await previewTermo(buildPayload())
@@ -97,6 +101,7 @@ function GerarTermoModal({ open, onClose, devices, onGenerated }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setSubmitResult(null)
     setLoadingSubmit(true)
     try {
       const result = await generateTermo(buildPayload())
@@ -104,12 +109,40 @@ function GerarTermoModal({ open, onClose, devices, onGenerated }) {
       if (data.downloadUrl) {
         window.open(`${SERVER_URL}${data.downloadUrl}`, '_blank', 'noopener,noreferrer')
       }
-      onGenerated?.(data)
-      onClose()
+      setSubmitResult(data)
+      await onGenerated?.(data)
     } catch (err) {
       setError(err.message || 'Erro ao gerar termo')
     } finally {
       setLoadingSubmit(false)
+    }
+  }
+
+  const handleDownload = () => {
+    if (!submitResult?.downloadUrl) return
+    window.open(`${SERVER_URL}${submitResult.downloadUrl}`, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleSendEmail = async () => {
+    if (!submitResult?.termId) return
+
+    setError('')
+    setLoadingSendEmail(true)
+
+    try {
+      const result = await sendTermoEmail(submitResult.termId)
+      const emailData = result.data || {}
+      setSubmitResult(prev => ({
+        ...(prev || {}),
+        ...emailData,
+        downloadUrl: prev?.downloadUrl,
+        fileName: prev?.fileName,
+        termId: prev?.termId || emailData.termId
+      }))
+    } catch (err) {
+      setError(err.message || 'Erro ao enviar email do termo')
+    } finally {
+      setLoadingSendEmail(false)
     }
   }
 
@@ -203,14 +236,40 @@ function GerarTermoModal({ open, onClose, devices, onGenerated }) {
           </div>
         )}
 
+        {submitResult && (
+          <div className={`term-preview ${submitResult.emailRequested && !submitResult.emailSent ? 'term-warning' : ''}`}>
+            <strong>Resultado</strong>
+            <span>Termo gerado com sucesso.</span>
+            {submitResult.emailRequested && submitResult.emailSent && (
+              <span>Email enviado com sucesso para {submitResult.emailRecipient || 'o destinatario configurado'}.</span>
+            )}
+            {submitResult.emailRequested && !submitResult.emailSent && (
+              <span>
+                Termo gerado com sucesso, mas o envio do email falhou.
+                {submitResult.emailError ? ` ${submitResult.emailError}` : ''}
+              </span>
+            )}
+          </div>
+        )}
+
         {error && <div className="error">{error}</div>}
 
         <div className="modal-actions">
-          <button type="button" onClick={onClose}>Cancelar</button>
-          <button type="button" onClick={handlePreview} disabled={loadingPreview || loadingSubmit}>
+          <button type="button" onClick={onClose}>{submitResult ? 'Fechar' : 'Cancelar'}</button>
+          <button type="button" onClick={handlePreview} disabled={loadingPreview || loadingSubmit || loadingSendEmail}>
             {loadingPreview ? 'Montando...' : 'Atualizar prévia'}
           </button>
-          <button type="submit" disabled={loadingSubmit}>
+          {submitResult?.downloadUrl && (
+            <button type="button" onClick={handleDownload} disabled={loadingSubmit || loadingSendEmail}>
+              Baixar termo
+            </button>
+          )}
+          {submitResult?.termId && (
+            <button type="button" onClick={handleSendEmail} disabled={loadingSubmit || loadingSendEmail}>
+              {loadingSendEmail ? 'Enviando...' : submitResult.emailSent ? 'Enviar novamente' : 'Enviar por email'}
+            </button>
+          )}
+          <button type="submit" disabled={loadingSubmit || loadingSendEmail}>
             {loadingSubmit ? 'Gerando...' : 'Gerar termo'}
           </button>
         </div>

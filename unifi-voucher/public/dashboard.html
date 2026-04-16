@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Voucher Wi-Fi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c12;
+      --surface: rgba(14, 20, 30, 0.9);
+      --surface2: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.07);
+      --border-accent: rgba(0,212,170,0.18);
+      --accent: #00d4aa;
+      --accent2: #22d3ee;
+      --text: #e8f0f7;
+      --muted: #6b7e94;
+      --danger: #f87171;
+      --success: #34d399;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,212,170,0.12) 0%, transparent 70%);
+      top: -200px; right: -200px;
+    }
+    .orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 70%);
+      bottom: -100px; left: -100px;
+    }
+
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 0 40px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,12,18,0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 14px rgba(0,212,170,0.3);
+    }
+    .logo-icon svg { width: 18px; height: 18px; fill: #000; }
+    .logo-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    .user-chip {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .user-avatar {
+      width: 20px; height: 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+      color: #000;
+    }
+
+    .btn-nav {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .btn-nav:hover { color: var(--text); border-color: var(--border-accent); }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      width: 100%;
+      max-width: 960px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 0 0 1px rgba(0,212,170,0.06), 0 40px 80px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 10%; right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+    }
+
+    /* Form (recepcao) */
+    .field { margin-bottom: 20px; }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+    input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      padding: 12px 16px;
+      outline: 0;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,170,0.1);
+    }
+    input::placeholder { color: var(--muted); opacity: 0.6; }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: 0;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      margin-top: 8px;
+      transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,212,170,0.2); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(0,0,0,0.25);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    /* Result card (recepcao) */
+    .result-card {
+      background: rgba(0,212,170,0.04);
+      border: 1px solid rgba(0,212,170,0.15);
+      border-radius: 14px;
+      padding: 28px 24px;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .result-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .result-code {
+      font-family: 'DM Mono', monospace;
+      font-size: 32px;
+      font-weight: 500;
+      letter-spacing: 6px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      position: relative;
+      display: inline-block;
+    }
+    .result-code:hover { opacity: 0.8; }
+    .copy-hint {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      letter-spacing: 0.3px;
+    }
+    .result-exp { font-size: 12px; color: var(--muted); }
+
+    /* Admin table */
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-group { display: flex; gap: 8px; }
+
+    .btn-outline {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+    }
+    .btn-outline-green {
+      background: transparent;
+      border: 1px solid rgba(52,211,153,0.35);
+      color: var(--success);
+    }
+    .btn-outline-green:hover {
+      background: rgba(52,211,153,0.08);
+      border-color: var(--success);
+    }
+    .btn-filled-teal {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      color: #000;
+    }
+    .btn-filled-teal:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0,212,170,0.25);
+    }
+    .btn-outline-green:disabled,
+    .btn-filled-teal:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .admin-msg {
+      display: none;
+      padding: 11px 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Skeleton */
+    @keyframes shimmer {
+      0%   { background-position: -600px 0; }
+      100% { background-position: 600px 0; }
+    }
+    .skeleton-row {
+      height: 44px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 600px 100%;
+      animation: shimmer 1.4s infinite;
+      margin-bottom: 8px;
+    }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { border-bottom: 1px solid var(--border); }
+    th {
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+    td { padding: 13px 14px; border-bottom: 1px solid var(--border); }
+    tbody tr { transition: background 0.15s; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+
+    @keyframes row-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    tbody tr { animation: row-in 0.25s ease both; }
+
+    .code-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(0,212,170,0.08);
+      border: 1px solid rgba(0,212,170,0.15);
+      padding: 3px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      user-select: all;
+      display: inline-block;
+    }
+    .code-badge:hover { background: rgba(0,212,170,0.14); border-color: rgba(0,212,170,0.3); }
+    .code-badge.copied { color: var(--success); background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.3); }
+
+    .tag-auto {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(107,126,148,0.15);
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    @media (max-width: 700px) {
+      header { padding: 0 16px; }
+      main { padding: 20px 12px; }
+      .card { padding: 24px 16px; }
+      .table-header { flex-direction: column; align-items: flex-start; }
+      .btn-group { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- =========================================================================
+     CABEÇALHO DA APLICAÇÃO (HEADER)
+     ========================================================================= -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M1 6.5C5.5 2 11 1 12 1s6.5 1 11 5.5L21 9.5C17.5 6 15 5 12 5s-5.5 1-9 4.5L1 6.5zM5 11c2-2 4.5-3 7-3s5 1 7 3l-2 2c-1.5-1.5-3-2-5-2s-3.5.5-5 2l-2-2zM12 16a3 3 0 100 6 3 3 0 000-6z"/></svg>
+    </div>
+    <span class="logo-name">Unifi Voucher</span>
+  </div>
+  <div class="header-right">
+    <!-- Elemento que receberá, via JavaScript, o Nome e Avatar do Usuário -->
+    <div class="user-chip">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span id="userInfo">—</span>
+    </div>
+    <!-- Botão que executa a função logout() ao ser clicado -->
+    <button class="btn-nav" onclick="logout()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      Sair
+    </button>
+  </div>
+</header>
+
+<!-- =========================================================================
+     CONTEÚDO PRINCIPAL (Onde a mágica acontece)
+     ========================================================================= -->
+<main>
+  <!-- Esta 'div' com id="content" funciona como uma caixa de areia. 
+       O JavaScript injetará dinamicamente o formulário ou a tabela dentro dela. -->
+  <div class="card" id="content">
+    <div style="text-align:center;padding:40px 0;color:var(--muted)">
+      <div class="spinner" style="margin:0 auto 14px;width:24px;height:24px;border-color:rgba(255,255,255,0.1);border-top-color:var(--accent)"></div>
+      <div style="font-size:13px">Carregando...</div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ============================================================================
+// 1. VERIFICAÇÃO DE AUTENTICAÇÃO (LOGIN)
+// ============================================================================
+// O 'localStorage' é uma "memória" do navegador. Aqui tentamos pegar o token e o usuário salvos.
+let token = localStorage.getItem('token');
+let user = localStorage.getItem('user');
+
+// Se não houver token ou usuário, significa que a pessoa não fez login.
+if (!token || !user) {
+  // Redireciona o usuário de volta para a página inicial (tela de login).
+  window.location.href = '/';
+} else {
+  // JSON.parse transforma o texto salvo no navegador de volta em um Objeto JavaScript que podemos usar.
+  user = JSON.parse(user);
+  
+  // Pega as 2 primeiras letras do nome do usuário e transforma em Maiúsculas (para criar o avatar).
+  const initials = user.username.substring(0,2).toUpperCase();
+  
+  // Manipulação do DOM (Document Object Model): Aqui estamos alterando o conteúdo visual do HTML através do JavaScript.
+  document.getElementById('userAvatar').textContent = initials;
+  document.getElementById('userInfo').textContent = user.username;
+  
+  // Aguarda 100 milissegundos e depois executa a função 'init()'.
+  setTimeout(init, 100);
+}
+
+// ============================================================================
+// 2. FUNÇÃO DE INICIALIZAÇÃO
+// ============================================================================
+function init() {
+  // Controle de Acesso (Role-based access control): 
+  // Se o tipo do usuário for 'admin', ele vê a lista de vouchers. Se não, vê o formulário de criação.
+  if (user.role === 'admin') {
+    showVouchers();
+  } else {
+    showForm();
+  }
+}
+
+// ============================================================================
+// 3. INTERFACE DE CRIAÇÃO DE VOUCHER (Para Recepcionistas)
+// ============================================================================
+function showForm() {
+  // Esta variável 'html' guarda um texto grande (usando crases ` ` para permitir múltiplas linhas).
+  // É o código HTML do formulário que será injetado na tela.
+  const html = `
+    <div class="card-title" style="margin-bottom:28px">Novo Voucher</div>
+    <div class="field"><label>Nome completo</label><input type="text" id="nome" placeholder="Ex: João Silva" autocomplete="off"></div>
+    <div class="field"><label>CPF</label><input type="text" id="cpf" placeholder="000.000.000-00" maxlength="14"></div>
+    <div id="err" style="color:var(--danger);font-size:13px;margin:10px 0;display:none;padding:10px 14px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:8px"></div>
+    <button class="btn" id="btn" onclick="gerar()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Gerar Voucher
+    </button>
+    <div id="res" role="status" aria-live="polite" aria-atomic="true" style="display:none">
+      <div class="result-card">
+        <div class="result-name" id="nome2"></div>
+        <div class="result-code" id="code" onclick="copiarCodigo(this)" title="Clique para copiar"></div>
+        <div class="copy-hint">Clique no código para copiar</div>
+        <div class="result-exp" id="exp"></div>
+      </div>
+      <button class="btn" onclick="location.reload()" style="margin-top:16px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        Novo visitante
+      </button>
+    </div>
+  `;
+  document.getElementById('content').innerHTML = html;
+
+  document.getElementById('cpf').addEventListener('input', function(e) {
+    let v = e.target.value.replace(/\D/g, '').substring(0,11);
+    if (v.length > 9) v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/^(\d{3})(\d{0,3})/, '$1.$2');
+    e.target.value = v;
+  });
+}
+
+function copiarCodigo(el) {
+  const text = el.textContent.trim();
+  navigator.clipboard.writeText(text.replace('-', '')).then(() => {
+    el.classList.add('copied');
+    const orig = el.textContent;
+    el.textContent = 'Copiado!';
+    setTimeout(() => { el.textContent = orig; el.classList.remove('copied'); }, 1500);
+  }).catch(() => {});
+}
+
+function validarCPF(cpf) {
+  cpf = cpf.replace(/[^\d]/g, '');
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  let soma = 0, mult = 10;
+  for (let i = 0; i < 9; i++) soma += parseInt(cpf[i]) * mult--;
+  let resto = soma % 11, d1 = resto < 2 ? 0 : 11 - resto;
+  if (parseInt(cpf[9]) !== d1) return false;
+  soma = 0; mult = 11;
+  for (let i = 0; i < 10; i++) soma += parseInt(cpf[i]) * mult--;
+  resto = soma % 11; let d2 = resto < 2 ? 0 : 11 - resto;
+  return parseInt(cpf[10]) === d2;
+}
+
+async function gerar() {
+  const nome = document.getElementById('nome').value.trim();
+  const cpf = document.getElementById('cpf').value.trim();
+  const btn = document.getElementById('btn');
+  const err = document.getElementById('err');
+
+  if (!nome || !cpf) {
+    err.textContent = 'Preencha todos os campos.';
+    err.style.display = 'block';
+    return;
+  }
+  if (!validarCPF(cpf)) {
+    err.textContent = 'CPF inválido. Verifique os dígitos verificadores.';
+    err.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Gerando...';
+  err.style.display = 'none';
+
+  try {
+    const r = await fetch('/api/voucher', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+      body: JSON.stringify({nome, cpf})
+    });
+    const d = await r.json();
+    if (r.ok) {
+      const exp = new Date(d.visitor.expira_em);
+      const codeFormatted = d.visitor.voucher_code.replace(/(.{5})/, '$1-');
+      document.getElementById('nome2').textContent = d.visitor.nome;
+      document.getElementById('code').textContent = codeFormatted;
+      document.getElementById('exp').textContent = 'Válido até ' + exp.toLocaleString('pt-BR');
+      document.getElementById('res').style.display = 'block';
+      document.getElementById('nome').parentElement.style.display = 'none';
+      document.getElementById('cpf').parentElement.style.display = 'none';
+      btn.style.display = 'none';
+    } else {
+      err.textContent = d.error || 'Erro ao gerar voucher.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Gerar Voucher';
+    }
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Gerar Voucher';
+  }
+}
+
+function showVouchers() {
+  const html = `
+    <div class="table-header">
+      <div class="card-title">Vouchers Gerados</div>
+      <div class="btn-group">
+        <button class="btn-outline btn-outline-green" onclick="exportarExcel()" aria-label="Exportar vouchers para CSV">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Exportar
+        </button>
+        <button class="btn-outline btn-filled-teal" id="btnGerar" onclick="gerarAutomatico()" aria-label="Gerar voucher automaticamente">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          Gerar Voucher
+        </button>
+      </div>
+    </div>
+    <div id="adminMsg" class="admin-msg" role="alert" aria-live="polite" aria-atomic="true"></div>
+    <div id="table">
+      <!-- Efeito de Skeleton (aquelas barrinhas piscando enquanto carrega) -->
+      ${[...Array(5)].map(() => '<div class="skeleton-row"></div>').join('')}
+    </div>
+  `;
+  document.getElementById('content').innerHTML = html;
+  // Logo após montar a casca da tela, pede os dados reais pro servidor.
+  carregarVouchers();
+}
+
+// Função similar a gerar(), mas para administradores criarem códigos vazios (Visitante Anonimo)
+async function gerarAutomatico() {
+  const btn = document.getElementById('btnGerar');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="border-color:rgba(0,0,0,0.2);border-top-color:#000;width:14px;height:14px"></div> Gerando...';
+
+  try {
+    const r = await fetch('/api/voucher', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+      body: JSON.stringify({nome: '', cpf: ''})
+    });
+    const d = await r.json();
+
+    if (r.ok) {
+      // Se deu certo, recarrega a tabela para mostrar o novo voucher na lista
+      carregarVouchers();
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Gerar Voucher';
+      showAdminMsg('Voucher gerado com sucesso.', 'success');
+    } else {
+      showAdminMsg('Erro: ' + (d.error || 'Falha ao gerar voucher'), 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Gerar Voucher';
+    }
+  } catch (e) {
+    showAdminMsg('Erro de conexão: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Gerar Voucher';
+  }
+}
+
+function carregarVouchers() {
+  fetch('/api/vouchers', {headers: {'Authorization': 'Bearer ' + token}})
+    .then(r => r.json())
+    .then(d => {
+      const rows = (d.data || []);
+      if (!rows.length) {
+        document.getElementById('table').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px">Nenhum voucher gerado ainda.</div>';
+        return;
+      }
+      let t = `<table>
+        <thead><tr>
+          <th>Data/Horário</th><th>Nome</th><th>CPF</th><th>Código</th>
+        </tr></thead><tbody>`;
+      rows.forEach((v, i) => {
+        const cpfFormatado = v.cpf !== '00000000000'
+          ? v.cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')
+          : '-';
+        const nomeExibir = v.nome !== 'Voucher Gerado' ? v.nome : '<span class="tag-auto">AUTO</span>';
+        const codeFormatted = v.voucher_code.replace(/(.{5})/, '$1-');
+        
+        // Adiciona uma nova 'linha de tabela' (<tr>) concatenada na nossa variável 't'
+        t += `<tr style="animation-delay:${i * 0.04}s">
+          <td style="color:var(--muted);font-size:12px">${v.criado_em}</td>
+          <td style="font-weight:500">${nomeExibir}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${cpfFormatado}</td>
+          <td><span class="code-badge" onclick="copiarBadge(this,'${v.voucher_code}')" title="Clique para copiar">${codeFormatted}</span></td>
+        </tr>`;
+      });
+      t += '</tbody></table>';
+      // Joga todo o código HTML construído na tela
+      document.getElementById('table').innerHTML = t;
+      // Guarda os dados numa variável global para podermos exportar pro Excel depois
+      window.vouchersData = d.data || [];
+    }).catch(e => {
+      document.getElementById('table').innerHTML = `<div style="color:var(--danger);padding:16px;font-size:13px">Erro ao carregar: ${e.message}</div>`;
+    });
+}
+
+// Mesmo sistema de cópia para uso dentro da tabela do admin
+function copiarBadge(el, raw) {
+  navigator.clipboard.writeText(raw).then(() => {
+    el.classList.add('copied');
+    const orig = el.textContent;
+    el.textContent = 'Copiado!';
+    setTimeout(() => { el.textContent = orig; el.classList.remove('copied'); }, 1500);
+  }).catch(() => {});
+}
+
+// Função genérica para mostrar balões de mensagem de sucesso/erro na tela do admin
+function showAdminMsg(text, type) {
+  const el = document.getElementById('adminMsg');
+  if (!el) return;
+  el.textContent = text;
+  el.style.display = 'block';
+  el.style.background = type === 'error' ? 'rgba(248,113,113,0.08)' : 'rgba(52,211,153,0.08)';
+  el.style.border = '1px solid ' + (type === 'error' ? 'rgba(248,113,113,0.3)' : 'rgba(52,211,153,0.3)');
+  el.style.color = type === 'error' ? 'var(--danger)' : 'var(--success)';
+  if (type !== 'error') setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+// ============================================================================
+// 7. EXPORTAÇÃO PARA EXCEL (Gerando um arquivo dinamicamente)
+// ============================================================================
+function exportarExcel() {
+  if (!window.vouchersData || window.vouchersData.length === 0) {
+    showAdminMsg('Nenhum voucher para exportar.', 'error');
+    return;
+  }
+  const headers = ['Data', 'Horário', 'Nome', 'CPF', 'Código Voucher', 'Validade'];
+  // O '.map' transforma nosso array original em um novo array, formatado linha por linha para a planilha.
+  const rows = window.vouchersData.map(v => {
+    const data = new Date(v.criado_em);
+    const dataStr = data.toLocaleDateString('pt-BR');
+    const hora = data.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const cpfFormatado = v.cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+    const validadeData = new Date(v.expira_em);
+    const validadeStr = validadeData.toLocaleDateString('pt-BR') + ' ' + validadeData.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    return [dataStr, hora, v.nome, cpfFormatado, v.voucher_code, validadeStr];
+  });
+  
+  // O formato CSV usa abas (ou vírgulas) para separar colunas, e um caractere '\n' (nova linha) para pular de linha.
+  let csv = headers.join('\t') + '\n';
+  rows.forEach(row => { csv += row.join('\t') + '\n'; });
+  
+  // Cria um "Blob", que é basicamente uma forma de armazenar dados puros na memória do navegador criando um "arquivo virtual".
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  // Cria um link de download temporário (<a href="...">)
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'vouchers_' + new Date().toISOString().split('T')[0] + '.csv');
+  link.style.visibility = 'hidden';
+  // Anexa o link invisível na página, "clica" nele via código, e depois o destrói. Magia!
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// ============================================================================
+// 8. LOGOUT (Sair do Sistema)
+// ============================================================================
+function logout() {
+  // Limpa tudo que estava salvo no localStorage do usuário e redireciona.
+  localStorage.clear();
+  window.location.href = '/';
+}
+</script>
+</body>
+</html>

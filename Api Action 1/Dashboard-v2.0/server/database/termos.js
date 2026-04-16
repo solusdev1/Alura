@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import { sanitizeRegex, validateStringLength } from '../utils/security.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -112,7 +113,8 @@ export async function initTermsStorage() {
 
 export async function listResponsaveis(search = '') {
     await initTermsStorage();
-    const normalized = String(search || '').trim().toLowerCase();
+    const normalized = validateStringLength(String(search || ''), 80, 'Busca').toLowerCase();
+    const safeSearch = normalized ? sanitizeRegex(normalized) : '';
 
     if (useJSON) {
         const responsaveis = readJson(RESPONSAVEIS_JSON_PATH);
@@ -128,8 +130,8 @@ export async function listResponsaveis(search = '') {
     const query = normalized
         ? {
             $or: [
-                { nome: { $regex: normalized, $options: 'i' } },
-                { documento: { $regex: normalized, $options: 'i' } }
+                { nome: { $regex: safeSearch, $options: 'i' } },
+                { documento: { $regex: safeSearch, $options: 'i' } }
             ]
         }
         : {};
@@ -280,7 +282,8 @@ export async function getTermById(id) {
 
 export async function listTerms(filters = {}) {
     await initTermsStorage();
-    const search = String(filters?.search || '').trim().toLowerCase();
+    const search = validateStringLength(String(filters?.search || ''), 80, 'Busca').toLowerCase();
+    const safeSearch = search ? sanitizeRegex(search) : '';
 
     if (useJSON) {
         const terms = readJson(TERMS_JSON_PATH);
@@ -298,9 +301,9 @@ export async function listTerms(filters = {}) {
     const query = search
         ? {
             $or: [
-                { 'contextSnapshot.responsavel.nome': { $regex: search, $options: 'i' } },
-                { 'contextSnapshot.responsavel.documento': { $regex: search, $options: 'i' } },
-                { fileName: { $regex: search, $options: 'i' } }
+                { 'contextSnapshot.responsavel.nome': { $regex: safeSearch, $options: 'i' } },
+                { 'contextSnapshot.responsavel.documento': { $regex: safeSearch, $options: 'i' } },
+                { fileName: { $regex: safeSearch, $options: 'i' } }
             ]
         }
         : {};

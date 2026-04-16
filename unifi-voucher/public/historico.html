@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Histórico de Visitantes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c12;
+      --surface: rgba(14, 20, 30, 0.9);
+      --surface2: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.07);
+      --border-accent: rgba(0,212,170,0.18);
+      --accent: #00d4aa;
+      --accent2: #22d3ee;
+      --text: #e8f0f7;
+      --muted: #6b7e94;
+      --danger: #f87171;
+      --success: #34d399;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(0,212,170,0.1) 0%, transparent 70%);
+      top: -150px; left: -150px;
+    }
+    .orb-2 {
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, rgba(34,211,238,0.07) 0%, transparent 70%);
+      bottom: -80px; right: -80px;
+    }
+
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 0 40px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,12,18,0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 14px rgba(0,212,170,0.3);
+    }
+    .logo-icon svg { width: 18px; height: 18px; fill: #000; }
+    .logo-wrap { display: flex; flex-direction: column; gap: 1px; }
+    .logo-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      line-height: 1;
+    }
+    .logo-sub { font-size: 10px; color: var(--muted); font-weight: 500; }
+
+    .btn-nav {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-nav:hover { color: var(--text); border-color: var(--border-accent); }
+
+    main {
+      flex: 1;
+      padding: 36px 40px;
+      max-width: 1160px;
+      margin: 0 auto;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+
+    .page-header { margin-bottom: 28px; }
+    .page-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      margin-bottom: 4px;
+    }
+    .page-title .grad {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .page-sub { font-size: 13px; color: var(--muted); }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .search-wrap {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .search-icon {
+      position: absolute;
+      left: 13px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .search-icon svg { width: 15px; height: 15px; fill: currentColor; }
+
+    .search-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      padding: 10px 14px 10px 38px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      backdrop-filter: blur(8px);
+    }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,170,0.08); }
+    .search-input::placeholder { color: var(--muted); opacity: 0.6; }
+
+    .total-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+    }
+    .total-badge strong { color: var(--accent); }
+
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 0 0 1px rgba(0,212,170,0.04), 0 20px 50px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .table-wrap::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 5%; right: 5%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,212,170,0.4), transparent);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead tr { background: rgba(0,212,170,0.03); border-bottom: 1px solid var(--border); }
+    th {
+      padding: 12px 20px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+    td { padding: 14px 20px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.15s; }
+    tbody tr:hover { background: var(--surface2); }
+
+    @keyframes row-in {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    tbody tr { animation: row-in 0.2s ease both; }
+
+    .code-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(0,212,170,0.07);
+      border: 1px solid rgba(0,212,170,0.15);
+      padding: 3px 9px;
+      border-radius: 6px;
+      display: inline-block;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: all;
+    }
+    .code-badge:hover { background: rgba(0,212,170,0.13); border-color: rgba(0,212,170,0.3); }
+    .code-badge.copied { color: var(--success); background: rgba(52,211,153,0.09); border-color: rgba(52,211,153,0.3); }
+
+    .btn-print {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      padding: 5px 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .btn-print:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-print svg { width: 13px; height: 13px; fill: currentColor; }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .empty-state svg { width: 40px; height: 40px; fill: var(--border); margin-bottom: 12px; }
+
+    nav.pagination {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .page-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      padding: 6px 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      backdrop-filter: blur(8px);
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .page-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent;
+      color: #000;
+      font-weight: 700;
+    }
+    .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    @media (max-width: 700px) {
+      header { padding: 0 16px; }
+      main { padding: 20px 14px; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .total-badge { text-align: center; }
+      table { font-size: 12px; }
+      th, td { padding: 10px 12px; }
+      .page-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M1 6.5C5.5 2 11 1 12 1s6.5 1 11 5.5L21 9.5C17.5 6 15 5 12 5s-5.5 1-9 4.5L1 6.5zM5 11c2-2 4.5-3 7-3s5 1 7 3l-2 2c-1.5-1.5-3-2-5-2s-3.5.5-5 2l-2-2zM12 16a3 3 0 100 6 3 3 0 000-6z"/></svg>
+    </div>
+    <div class="logo-wrap">
+      <div class="logo-name">Wi-Fi Visitantes</div>
+      <div class="logo-sub">Histórico</div>
+    </div>
+  </div>
+  <nav>
+    <!-- Botão link padrão do HTML '<a>' enviando o usuário de volta para a raiz '/' -->
+    <a href="/" class="btn-nav">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Novo Voucher
+    </a>
+  </nav>
+</header>
+
+<!-- =========================================================================
+     ÁREA DE FERRAMENTAS E TABELA HTML
+     ========================================================================= -->
+<main>
+  <div class="page-header">
+    <div class="page-title">Histórico de <span class="grad">Visitantes</span></div>
+    <div class="page-sub">Registro completo de todos os vouchers gerados.</div>
+  </div>
+
+  <!-- BARRA DE FERRAMENTAS (BUSCA): Usa 'oninput' para capturar qualquer letra pressionada -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      </span>
+      <input class="search-input" id="busca" type="search" placeholder="Buscar por nome, CPF ou código..." oninput="buscar()" aria-label="Buscar visitantes por nome, CPF ou código de voucher" autocomplete="off">
+    </div>
+    <div class="total-badge">Total: <strong id="totalCount">-</strong></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nome</th>
+          <th>CPF</th>
+          <th>Voucher</th>
+          <th>Gerado em</th>
+          <th>Expira em</th>
+          <th></th>
+        </tr>
+      </thead>
+      <!-- Elemento 'tbody' tem um ID para que o Script apague este "Carregando..." 
+           e coloque as linhas da tabela retornadas pelo back-end em loop (map). -->
+      <tbody id="tbody" aria-live="polite" aria-relevant="additions text">
+        <tr><td colspan="7" class="empty-state">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CONTÊINER DA PAGINAÇÃO: Onde os botões 1, 2, 3... são renderizados dinamicamente -->
+  <nav class="pagination" id="pagination" aria-label="Paginação de visitantes"></nav>
+</main>
+
+<script>
+  let paginaAtual = 1;
+  let buscaTimeout;
+
+  // ==========================================================================
+  // 1. SISTEMA DE BUSCA COM "DEBOUNCE"
+  // ==========================================================================
+  // Se não usássemos isso, a cada letra que o usuário digitasse, faria uma chamada no banco.
+  // O setTimeout espera o usuário parar de digitar por 300ms antes de buscar de verdade.
+  function buscar() {
+    clearTimeout(buscaTimeout);
+    buscaTimeout = setTimeout(() => {
+      paginaAtual = 1;
+      carregar();
+    }, 300);
+  }
+
+  // ==========================================================================
+  // 2. FUNÇÃO QUE CARREGA OS DADOS DO SERVIDOR
+  // ==========================================================================
+  async function carregar() {
+    const busca = document.getElementById('busca').value;
+    // Dispara para a nossa rota no servidor pedindo os dados. encodeURIComponent garante que espaços e acentos não quebrem a URL
+    const res = await fetch(`/api/historico?busca=${encodeURIComponent(busca)}&pagina=${paginaAtual}`);
+    const data = await res.json();
+
+    document.getElementById('totalCount').textContent = data.total;
+    const tbody = document.getElementById('tbody');
+
+    // Se voltar vazio, renderiza um HTML de "Nada encontrado"
+    if (!data.visitors.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 2.75c1.24 0 2.25 1.01 2.25 2.25S13.24 11.25 12 11.25 9.75 10.24 9.75 9 10.76 6.75 12 6.75zM17 17H7v-.75c0-1.67 3.33-2.5 5-2.5s5 .83 5 2.5V17z"/></svg>
+        Nenhum visitante encontrado.
+      </td></tr>`;
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    // O comando `.map()` é poderoso. Ele varre a nossa lista recebida do servidor e para cada item,
+    // monta o bloquinho HTML daquela linha (<tr>) que será mostrada na tabela
+    tbody.innerHTML = data.visitors.map((v, i) => `
+      <tr style="animation-delay:${i * 0.03}s">
+        <td style="color:var(--muted);font-size:11px;font-family:'DM Mono',monospace">${v.id}</td>
+        <td><strong style="font-weight:600">${v.nome}</strong></td>
+        <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${formatCpf(v.cpf)}</td>
+        <td><span class="code-badge" onclick="copiarBadge(this,'${v.voucher_code}')" title="Clique para copiar">${formatVoucher(v.voucher_code)}</span></td>
+        <td style="color:var(--muted);font-size:12px">${formatData(v.criado_em)}</td>
+        <td style="color:var(--muted);font-size:12px">${formatData(v.expira_em)}</td>
+        <td>
+          <button class="btn-print" onclick="imprimir(${v.id})" aria-label="Imprimir voucher de ${v.nome}">
+            <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+            Imprimir
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+    const pagination = document.getElementById('pagination');
+    if (data.paginas <= 1) { pagination.innerHTML = ''; return; }
+
+    let html = `<button class="page-btn" onclick="irPagina(${paginaAtual - 1})" ${paginaAtual === 1 ? 'disabled' : ''} aria-label="Página anterior">← Anterior</button>`;
+    for (let i = 1; i <= data.paginas; i++) {
+      const isCurrent = i === paginaAtual;
+      html += `<button class="page-btn ${isCurrent ? 'active' : ''}" onclick="irPagina(${i})" aria-label="Página ${i}" ${isCurrent ? 'aria-current="page"' : ''}>${i}</button>`;
+    }
+    html += `<button class="page-btn" onclick="irPagina(${paginaAtual + 1})" ${paginaAtual === data.paginas ? 'disabled' : ''} aria-label="Próxima página">Próxima →</button>`;
+    pagination.innerHTML = html;
+  }
+
+  function copiarBadge(el, raw) {
+    navigator.clipboard.writeText(raw).then(() => {
+      el.classList.add('copied');
+      const orig = el.textContent;
+      el.textContent = 'Copiado!';
+      setTimeout(() => { el.textContent = orig; el.classList.remove('copied'); }, 1500);
+    }).catch(() => {});
+  }
+
+  // Função que muda a variável de página e chama os dados de novo
+  function irPagina(p) { paginaAtual = p; carregar(); }
+  // Abre a página de impressão numa nova aba (_blank) passando o ID na URL
+  function imprimir(id) { window.open(`/imprimir/${id}`, '_blank'); }
+
+  // ==========================================================================
+  // UTILS: Funções formatações visuais
+  // ==========================================================================
+  function formatCpf(cpf) {
+    return cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+  }
+  function formatVoucher(code) {
+    return code.replace(/(.{5})/, '$1-');
+  }
+  function formatData(iso) {
+    if (!iso) return '-';
+    return new Date(iso).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+  }
+
+  carregar();
+</script>
+</body>
+</html>

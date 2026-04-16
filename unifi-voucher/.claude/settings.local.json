@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3MjYzODYwMSwiZXhwIjoxNzcyNjY3NDAxfQ.Uhyz1mEQT5ImsTW4NBjt1W2oKmxAtR-1iOpGjyBXi1A\")",
+      "Bash(__NEW_LINE_076f40651847a176__ echo \"=== /api/vouchers ===\")",
+      "Bash(curl -s \"http://localhost:4000/api/vouchers\" -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(__NEW_LINE_1235bb9f43d7d645__ echo -e \"\\\\n\\\\n=== /api/historico ===\")",
+      "Bash(curl -s \"http://localhost:4000/api/historico\" -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(__NEW_LINE_7ca6f6a9bd12fb38__ echo -e \"\\\\n\\\\n=== Login inválido ===\")",
+      "Bash(curl -s -X POST http://localhost:4000/api/login -H \"Content-Type: application/json\" -d '{\"\"username\"\":\"\"admin\"\",\"\"password\"\":\"\"errada\"\"}')",
+      "Bash(__NEW_LINE_7ca6f6a9bd12fb38__ echo -e \"\\\\n\\\\n=== Token inválido ===\")",
+      "Bash(curl -s \"http://localhost:4000/api/vouchers\" -H \"Authorization: Bearer tokeninvalido\")",
+      "Bash(__NEW_LINE_7ca6f6a9bd12fb38__ echo -e \"\\\\n\\\\n=== Sem body no login ===\")",
+      "Bash(curl -s -X POST http://localhost:4000/api/login -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(__NEW_LINE_7ca6f6a9bd12fb38__ echo -e \"\\\\n\\\\n=== Pagina invalida ===\")",
+      "Bash(curl -s \"http://localhost:4000/api/historico?pagina=abc\" -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(__NEW_LINE_31fce25ab9a74d26__ echo -e \"\\\\n\\\\n=== Visitante inexistente ===\")",
+      "Bash(curl -s \"http://localhost:4000/api/visitante/99999\" -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(curl -s http://localhost:4000/)"
+    ]
+  }
+}

@@ -26,6 +26,10 @@ async function parseJsonResponse(response) {
     return JSON.parse(text);
 }
 
+function isForbiddenAction1Error(error) {
+    return String(error?.message || '').includes('Erro API 403');
+}
+
 export async function authenticateAction1() {
     const authPayload = getAuthPayload();
     if (!authPayload.client_id || !authPayload.client_secret) {
@@ -96,7 +100,20 @@ async function listAllEndpointsByKind(kind, organizationId, token, existingIds =
 export async function listOrganizationEndpoints(organizationId, token) {
     const seenIds = new Set();
     const managed = await listAllEndpointsByKind('managed', organizationId, token, seenIds);
-    const unmanaged = await listAllEndpointsByKind('unmanaged', organizationId, token, seenIds);
+    let unmanaged = [];
+
+    try {
+        unmanaged = await listAllEndpointsByKind('unmanaged', organizationId, token, seenIds);
+    } catch (error) {
+        if (!isForbiddenAction1Error(error)) {
+            throw error;
+        }
+
+        console.warn(
+            `Action1 unmanaged endpoints sem permissao para a organizacao ${organizationId}; continuando com endpoints gerenciados.`
+        );
+    }
+
     return [...managed, ...unmanaged];
 }
 
@@ -114,4 +131,3 @@ export async function listAllEndpoints(token) {
 
     return endpoints;
 }
-

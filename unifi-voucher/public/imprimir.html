@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imprimir Voucher</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Loading overlay */
+    #loadingState {
+      position: fixed;
+      inset: 0;
+      background: #f0f4f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 14px;
+      font-family: 'DM Sans', sans-serif;
+      color: #94a3b8;
+      font-size: 14px;
+      z-index: 20;
+    }
+
+    .load-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #00d4aa;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* Voucher card */
+    .print-area {
+      background: #fff;
+      width: 380px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow:
+        0 4px 6px rgba(0,0,0,0.05),
+        0 20px 60px rgba(0,0,0,0.12),
+        0 0 0 1px rgba(0,0,0,0.04);
+      animation: card-in 0.45s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    /* Top gradient strip */
+    .header-strip {
+      height: 5px;
+      background: linear-gradient(90deg, #00d4aa, #22d3ee, #00d4aa);
+      background-size: 200% 100%;
+    }
+
+    .content { padding: 30px 30px 24px; }
+
+    /* Company header */
+    .company {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 26px;
+      padding-bottom: 22px;
+      border-bottom: 1px dashed #e8edf2;
+    }
+
+    .company-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #00d4aa, #22d3ee);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0,212,170,0.25);
+    }
+    .company-icon svg { width: 20px; height: 20px; fill: #000; }
+    .company-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+    .company-sub { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+
+    /* Code section */
+    .voucher-center {
+      text-align: center;
+      margin-bottom: 26px;
+    }
+
+    .voucher-label {
+      font-size: 9px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .voucher-code {
+      font-family: 'DM Mono', monospace;
+      font-size: 32px;
+      font-weight: 500;
+      letter-spacing: 7px;
+      color: #00d4aa;
+      background: linear-gradient(135deg, #f0fdf9, #ecfeff);
+      padding: 16px 22px;
+      border-radius: 12px;
+      border: 1.5px dashed #00d4aa;
+      display: inline-block;
+      margin-bottom: 10px;
+      text-indent: 7px; /* optical compensation for letter-spacing */
+    }
+
+    .voucher-validity {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    /* Info grid */
+    .info-grid {
+      background: #f8fafc;
+      border: 1px solid #e8edf2;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+    }
+    .info-row + .info-row { border-top: 1px solid #e8edf2; }
+    .info-key {
+      font-size: 10px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      font-weight: 700;
+    }
+    .info-val {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      text-align: right;
+      max-width: 200px;
+    }
+
+    /* Instructions */
+    .instructions {
+      font-size: 11px;
+      color: #94a3b8;
+      text-align: center;
+      line-height: 1.65;
+      padding-top: 18px;
+      border-top: 1px dashed #e8edf2;
+    }
+    .instructions strong { color: #64748b; }
+
+    /* Print button */
+    .btn-print-action {
+      display: block;
+      width: calc(100% - 60px);
+      margin: 18px 30px 28px;
+      padding: 13px;
+      background: linear-gradient(135deg, #00d4aa, #22d3ee);
+      border: none;
+      border-radius: 10px;
+      color: #000;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-print-action:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 10px 28px rgba(0,212,170,0.3);
+    }
+    .btn-print-action svg { width: 16px; height: 16px; fill: #000; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .print-area { box-shadow: none; border-radius: 0; animation: none; }
+      .btn-print-action { display: none !important; }
+      #loadingState { display: none !important; }
+      .header-strip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- =========================================================================
+     TELA DE CARREGAMENTO (Loading Animation)
+     Enquanto fazemos a requisição via rede, escondemos a tela real de impressão.
+     ========================================================================= -->
+<div id="loadingState" role="status" aria-live="polite">
+  <div class="load-spinner"></div>
+  Carregando voucher...
+</div>
+
+<!-- =========================================================================
+     O "PAPEL" DO VOUCHER A SER IMPRESSO
+     A propriedade 'hidden' esconde a caixa via código nativo do HTML até ser acionada.
+     ========================================================================= -->
+<div class="print-area" id="printArea" hidden>
+  <div class="header-strip"></div>
+  <div class="content">
+    <div class="company">
+      <div class="company-icon">
+        <svg viewBox="0 0 24 24"><path d="M1 6.5C5.5 2 11 1 12 1s6.5 1 11 5.5L21 9.5C17.5 6 15 5 12 5s-5.5 1-9 4.5L1 6.5zM5 11c2-2 4.5-3 7-3s5 1 7 3l-2 2c-1.5-1.5-3-2-5-2s-3.5.5-5 2l-2-2zM12 16a3 3 0 100 6 3 3 0 000-6z"/></svg>
+      </div>
+      <div>
+        <div class="company-name">Wi-Fi Visitantes</div>
+        <div class="company-sub">Acesso temporário à internet</div>
+      </div>
+    </div>
+
+    <div class="voucher-center">
+      <div class="voucher-label">Código de Acesso</div>
+      <div class="voucher-code" id="pCode">-------</div>
+      <div class="voucher-validity" id="pValidade">—</div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-row">
+        <span class="info-key">Visitante</span>
+        <span class="info-val" id="pNome">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Gerado em</span>
+        <span class="info-val" id="pGerado">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">Expira em</span>
+        <span class="info-val" id="pExpira">—</span>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <strong>Como usar:</strong><br>
+      Conecte ao Wi-Fi <strong>"Visitantes"</strong>, abra o navegador<br>
+      e insira o código acima quando solicitado.
+    </div>
+  </div>
+
+  <button class="btn-print-action" onclick="window.print()" aria-label="Imprimir este voucher">
+    <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+    Imprimir este voucher
+  </button>
+</div>
+
+<script>
+  function formatVoucher(code) {
+    return code.replace(/(.{5})/, '$1-');
+  }
+
+  // ==========================================================================
+  // 1. LER PARÂMETRO DA URL PARA SABER QUEM IMPRIMIR
+  // ==========================================================================
+  // "window.location.pathname" pega o caminho inteiro (ex: /imprimir/15). 
+  // O ".split('/').pop()" divide por '/' e pega o último pedaço (15).
+  const id = window.location.pathname.split('/').pop();
+
+  // Pede os dados desse visitante em específico pro nosso Back-end
+  fetch(`/api/visitante/${id}`)
+    .then(r => {
+      // Trata erros de status HTTP (como 404 Não encontrado)
+      if (!r.ok) throw new Error('Voucher não encontrado (HTTP ' + r.status + ')');
+      return r.json();
+    })
+    .then(v => {
+      if (!v || !v.voucher_code) throw new Error('Dados do voucher inválidos');
+
+      const expira = new Date(v.expira_em);
+      const criado = new Date(v.criado_em);
+
+      // Popula o ticket que vai ser impresso na tela
+      document.getElementById('pCode').textContent = formatVoucher(v.voucher_code);
+      document.getElementById('pNome').textContent = v.nome;
+      document.getElementById('pGerado').textContent = criado.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+      document.getElementById('pExpira').textContent = expira.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+      document.getElementById('pValidade').textContent = `Válido até ${expira.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})} de ${expira.toLocaleDateString('pt-BR')}`;
+      document.title = `Voucher - ${v.nome}`;
+
+      // Retira a aba de "Carregando" da tela e exibe o voucher preenchido
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('printArea').removeAttribute('hidden');
+    })
+    .catch(err => {
+      // Se falhar (ex: digitou um ID que não existe), constrói um alerta de erro na tela
+      const ls = document.getElementById('loadingState');
+      ls.innerHTML = `
+        <div style="text-align:center;max-width:300px;padding:20px">
+          <div style="width:56px;height:56px;background:#fef2f2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="#f87171"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          </div>
+          <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:8px">Voucher não encontrado</div>
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:24px">${err.message}</div>
+          <button onclick="history.back()" style="padding:10px 24px;background:linear-gradient(135deg,#00d4aa,#22d3ee);border:none;border-radius:10px;color:#000;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Voltar</button>
+        </div>
+      `;
+    });
+</script>
+
+</body>
+</html>

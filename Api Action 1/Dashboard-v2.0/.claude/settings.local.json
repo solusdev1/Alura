@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -X POST http://localhost:3002/api/sync -H \"Content-Type: application/json\" --max-time 120)",
+      "Bash(curl -s http://localhost:3002/api/inventory)",
+      "Bash(node -e \"const c=[]; process.stdin.on\\(''data'',d=>c.push\\(d\\)\\); process.stdin.on\\(''end'',\\(\\)=>console.log\\(''R1: total=''+JSON.parse\\(Buffer.concat\\(c\\)\\).data.length\\)\\);\")",
+      "Bash(node -e \"const c=[]; process.stdin.on\\(''data'',d=>c.push\\(d\\)\\); process.stdin.on\\(''end'',\\(\\)=>console.log\\(''R2: total=''+JSON.parse\\(Buffer.concat\\(c\\)\\).data.length\\)\\);\")",
+      "Bash(node -e \"const c=[]; process.stdin.on\\(''data'',d=>c.push\\(d\\)\\); process.stdin.on\\(''end'',\\(\\)=>console.log\\(''R3: total=''+JSON.parse\\(Buffer.concat\\(c\\)\\).data.length\\)\\);\")",
+      "Bash(node -e \"const c=[]; process.stdin.on\\(''data'',d=>c.push\\(d\\)\\); process.stdin.on\\(''end'',\\(\\)=>console.log\\(''total=''+JSON.parse\\(Buffer.concat\\(c\\)\\).data.length\\)\\);\")",
+      "Bash(node -e \":*)",
+      "Bash(node -e \"const c=[]; process.stdin.on\\(''data'',d=>c.push\\(d\\)\\); process.stdin.on\\(''end'',\\(\\)=>console.log\\(''2a request:'', JSON.parse\\(Buffer.concat\\(c\\)\\).data.length\\)\\);\")",
+      "Bash(node -e \"const c=[]; process.stdin.on\\(''data'',d=>c.push\\(d\\)\\); process.stdin.on\\(''end'',\\(\\)=>console.log\\(''3a request:'', JSON.parse\\(Buffer.concat\\(c\\)\\).data.length\\)\\);\")",
+      "Bash(curl -s -X POST http://localhost:3002/api/sync)"
+    ]
+  }
+}

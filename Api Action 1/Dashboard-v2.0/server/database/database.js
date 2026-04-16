@@ -808,6 +808,124 @@ export async function updateSyncStatus(status, totalDevices = 0) {
     }
 }
 
+export async function acquireSyncLock(options = {}) {
+    const owner = String(options.owner || 'unknown');
+    const ttlMs = Number(options.ttlMs || 5 * 60 * 1000);
+    const now = Date.now();
+    const expiresAt = now + ttlMs;
+    const token = `sync-${now}-${Math.random().toString(36).slice(2, 8)}`;
+
+    if (useJSON) {
+        try {
+            const metadata = JSON.parse(fs.readFileSync(METADATA_PATH, 'utf-8'));
+            const currentToken = metadata.sync_lock_token || '';
+            const currentExpiresAt = Number(metadata.sync_lock_expires_at || 0);
+
+            if (currentToken && currentExpiresAt > now) {
+                return null;
+            }
+
+            metadata.sync_lock_token = token;
+            metadata.sync_lock_owner = owner;
+            metadata.sync_lock_acquired_at = new Date(now).toISOString();
+            metadata.sync_lock_expires_at = expiresAt;
+            fs.writeFileSync(METADATA_PATH, JSON.stringify(metadata, null, 2));
+            return token;
+        } catch (error) {
+            console.error('Erro ao adquirir lock de sync (JSON):', error.message);
+            return null;
+        }
+    }
+
+    try {
+        const database = await getDB();
+        const collection = database.collection(COLLECTION_METADATA);
+
+        const updateResult = await collection.updateOne(
+            {
+                _id: 'sync_lock',
+                $or: [
+                    { expiresAt: { $exists: false } },
+                    { expiresAt: { $lte: new Date(now) } },
+                    { token: null }
+                ]
+            },
+            {
+                $set: {
+                    token,
+                    owner,
+                    acquiredAt: new Date(now),
+                    expiresAt: new Date(expiresAt)
+                }
+            }
+        );
+
+        if (updateResult.matchedCount === 1) {
+            return token;
+        }
+
+        try {
+            await collection.insertOne({
+                _id: 'sync_lock',
+                token,
+                owner,
+                acquiredAt: new Date(now),
+                expiresAt: new Date(expiresAt)
+            });
+            return token;
+        } catch (insertError) {
+            if (insertError.code === 11000) {
+                return null;
+            }
+            throw insertError;
+        }
+    } catch (error) {
+        console.error('Erro ao adquirir lock de sync:', error.message);
+        return null;
+    }
+}
+
+export async function releaseSyncLock(token) {
+    if (!token) return;
+
+    if (useJSON) {
+        try {
+            const metadata = JSON.parse(fs.readFileSync(METADATA_PATH, 'utf-8'));
+            if (metadata.sync_lock_token !== token) {
+                return;
+            }
+
+            metadata.sync_lock_token = '';
+            metadata.sync_lock_owner = '';
+            metadata.sync_lock_acquired_at = null;
+            metadata.sync_lock_expires_at = 0;
+            metadata.sync_lock_released_at = new Date().toISOString();
+            fs.writeFileSync(METADATA_PATH, JSON.stringify(metadata, null, 2));
+        } catch (error) {
+            console.error('Erro ao liberar lock de sync (JSON):', error.message);
+        }
+        return;
+    }
+
+    try {
+        const database = await getDB();
+        await database.collection(COLLECTION_METADATA).updateOne(
+            { _id: 'sync_lock', token },
+            {
+                $set: {
+                    token: null,
+                    owner: null,
+                    acquiredAt: null,
+                    expiresAt: new Date(0),
+                    releasedAt: new Date()
+                }
+            }
+        );
+    } catch (error) {
+        console.error('Erro ao liberar lock de sync:', error.message);
+    }
+}
+
 /**
  * Fechar conexão com o banco de dados
  */

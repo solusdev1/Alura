@@ -359,7 +359,6 @@ function App() {
   }
 
   const handleTermGenerated = async () => {
-    setTermModalOpen(false)
     setSelectedIds([])
     await carregarDados()
   }
@@ -391,8 +390,8 @@ function App() {
           </div>
 
           <div className="server-line">
-            <span className={`dot ${serverStatus.server === 'running' ? 'ok' : 'fail'}`} />
-            <strong>Servidor {serverStatus.server === 'running' ? 'Online' : 'Offline'}</strong>
+            <span className={`dot ${isServerOnline(serverStatus) ? 'ok' : 'fail'}`} />
+            <strong>Servidor {isServerOnline(serverStatus) ? 'Online' : 'Offline'}</strong>
           </div>
 
           <div className="top-stats">
@@ -642,6 +641,10 @@ function App() {
       )}
     </div>
   )
+}
+
+function isServerOnline(serverStatus) {
+  return ['running', 'online'].includes(String(serverStatus?.server || '').toLowerCase())
 }
 
 // Monta descricao compacta de hardware quando a descricao estiver vazia.

@@ -6,15 +6,31 @@ export const SERVER_URL = import.meta.env.PROD
     ? '' // Vercel usa mesma origem
     : 'http://localhost:3002';
 
+const SYNC_SECRET = import.meta.env.VITE_SYNC_SECRET || '';
+
+async function parseApiError(response, fallbackMessage) {
+    try {
+        const error = await response.json();
+        return error.error || fallbackMessage;
+    } catch {
+        return fallbackMessage;
+    }
+}
+
 // Dispara sincronizacao manual com Action1 via backend.
 export async function syncInventory() {
+    const headers = {};
+    if (SYNC_SECRET) {
+        headers['x-sync-secret'] = SYNC_SECRET;
+    }
+
     const response = await fetch(`${SERVER_URL}/api/sync`, {
         method: 'POST',
+        headers
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao sincronizar');
+        throw new Error(await parseApiError(response, 'Erro ao sincronizar'));
     }
 
     return await response.json();
@@ -73,8 +89,7 @@ export async function deleteInventoryByIds(ids) {
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao excluir dispositivos');
+        throw new Error(await parseApiError(response, 'Erro ao excluir dispositivos'));
     }
 
     return await response.json();
@@ -89,8 +104,7 @@ export async function updateInventoryDevice(id, payload) {
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao atualizar dispositivo');
+        throw new Error(await parseApiError(response, 'Erro ao atualizar dispositivo'));
     }
 
     return await response.json();
@@ -105,8 +119,7 @@ export async function createInventoryDevice(payload) {
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao criar dispositivo');
+        throw new Error(await parseApiError(response, 'Erro ao criar dispositivo'));
     }
 
     return await response.json();
@@ -131,8 +144,7 @@ export async function previewTermo(payload) {
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao gerar pre-visualizacao do termo');
+        throw new Error(await parseApiError(response, 'Erro ao gerar pre-visualizacao do termo'));
     }
 
     return await response.json();
@@ -146,8 +158,19 @@ export async function generateTermo(payload) {
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao gerar termo');
+        throw new Error(await parseApiError(response, 'Erro ao gerar termo'));
+    }
+
+    return await response.json();
+}
+
+export async function sendTermoEmail(termId) {
+    const response = await fetch(`${SERVER_URL}/api/termos/${encodeURIComponent(termId)}/send-email`, {
+        method: 'POST'
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseApiError(response, 'Erro ao enviar email do termo'));
     }
 
     return await response.json();
