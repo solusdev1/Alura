@@ -11,7 +11,11 @@
       "Bash(node -e \":*)",
       "Bash(node -e \"const c=[]; process.stdin.on\\(''data'',d=>c.push\\(d\\)\\); process.stdin.on\\(''end'',\\(\\)=>console.log\\(''2a request:'', JSON.parse\\(Buffer.concat\\(c\\)\\).data.length\\)\\);\")",
       "Bash(node -e \"const c=[]; process.stdin.on\\(''data'',d=>c.push\\(d\\)\\); process.stdin.on\\(''end'',\\(\\)=>console.log\\(''3a request:'', JSON.parse\\(Buffer.concat\\(c\\)\\).data.length\\)\\);\")",
-      "Bash(curl -s -X POST http://localhost:3002/api/sync)"
+      "Bash(curl -s -X POST http://localhost:3002/api/sync)",
+      "Bash(npm --version)",
+      "Bash(npx create-next-app@latest \"Dashboard-v3.0\" --typescript --tailwind --app --no-src-dir --no-eslint --import-alias \"@/*\" --yes)",
+      "Bash(npx create-next-app@latest \"dashboard-v3\" --typescript --tailwind --app --no-src-dir --no-eslint --import-alias \"@/*\" --yes)",
+      "Bash(npm install *)"
     ]
   }
 }

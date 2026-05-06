@@ -88,6 +88,10 @@ function applySupplementalFields(apiDevice, existingDevice, supplementalDevice) 
     const fields = [
         'cloud',
         'setor',
+        'baseId',
+        'baseCodigo',
+        'baseNome',
+        'baseTipo',
         'dataAlteracao',
         'responsavelAtualId',
         'responsavelAtualNome',
@@ -538,6 +542,7 @@ export async function updateDeviceById(id, updates) {
     const allowedFields = new Set([
         'nome', 'tipo', 'usuario', 'adDisplayName', 'email', 'cloud', 'setor',
         'city', 'status', 'dataAlteracao', 'descricao', 'memoria', 'disco', 'so',
+        'baseId', 'baseCodigo', 'baseNome', 'baseTipo',
         'organizacao', 'serial', 'ip', 'mac', 'fabricante', 'modelo', 'cpu',
         'hostname', 'perifericos', 'duasTelas', 'responsavelAtualId',
         'responsavelAtualNome', 'responsavelAtualDocumento', 'responsavelAtualCargo',
@@ -603,6 +608,7 @@ export async function createDevice(payload) {
     const allowedFields = new Set([
         'id', 'nome', 'tipo', 'usuario', 'adDisplayName', 'email', 'cloud', 'setor',
         'city', 'status', 'dataAlteracao', 'descricao', 'memoria', 'disco', 'so',
+        'baseId', 'baseCodigo', 'baseNome', 'baseTipo',
         'organizacao', 'serial', 'ip', 'mac', 'fabricante', 'modelo', 'cpu',
         'hostname', 'perifericos', 'duasTelas', 'responsavelAtualId',
         'responsavelAtualNome', 'responsavelAtualDocumento', 'responsavelAtualCargo',
@@ -628,6 +634,10 @@ export async function createDevice(payload) {
         email: sanitized.email || '',
         cloud: sanitized.cloud || '',
         setor: sanitized.setor || '',
+        baseId: sanitized.baseId || '',
+        baseCodigo: sanitized.baseCodigo || '',
+        baseNome: sanitized.baseNome || '',
+        baseTipo: sanitized.baseTipo || '',
         city: sanitized.city || '',
         status: sanitized.status || 'Em Uso',
         responsavelAtualId: sanitized.responsavelAtualId || '',

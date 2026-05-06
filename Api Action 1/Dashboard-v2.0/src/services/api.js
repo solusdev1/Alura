@@ -175,3 +175,95 @@ export async function sendTermoEmail(termId) {
 
     return await response.json();
 }
+
+export async function getAdminSnapshot() {
+    const response = await fetch(`${SERVER_URL}/api/admin/snapshot`);
+    if (!response.ok) {
+        throw new Error(await parseApiError(response, 'Erro ao carregar administração'));
+    }
+
+    const result = await response.json();
+    return result.data || { bases: [], users: [], movements: [], reports: [] };
+}
+
+export async function createBase(payload) {
+    const response = await fetch(`${SERVER_URL}/api/admin/bases`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseApiError(response, 'Erro ao criar base'));
+    }
+
+    return await response.json();
+}
+
+export async function toggleBaseStatus(id) {
+    const response = await fetch(`${SERVER_URL}/api/admin/bases/${encodeURIComponent(id)}/toggle`, {
+        method: 'PATCH'
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseApiError(response, 'Erro ao atualizar base'));
+    }
+
+    return await response.json();
+}
+
+export async function createAdminUser(payload) {
+    const response = await fetch(`${SERVER_URL}/api/admin/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseApiError(response, 'Erro ao criar usuário'));
+    }
+
+    return await response.json();
+}
+
+export async function updateAdminUser(id, payload) {
+    const response = await fetch(`${SERVER_URL}/api/admin/users/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseApiError(response, 'Erro ao atualizar usuário'));
+    }
+
+    return await response.json();
+}
+
+export async function createMovement(payload) {
+    const response = await fetch(`${SERVER_URL}/api/admin/movements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseApiError(response, 'Erro ao solicitar movimentação'));
+    }
+
+    return await response.json();
+}
+
+export async function respondMovement(id, payload) {
+    const response = await fetch(`${SERVER_URL}/api/admin/movements/${encodeURIComponent(id)}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        throw new Error(await parseApiError(response, 'Erro ao responder movimentação'));
+    }
+
+    return await response.json();
+}

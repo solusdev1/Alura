@@ -23,6 +23,15 @@ import {
     updateDeviceById,
     createDevice
 } from './database/database.js';
+import {
+    createBase,
+    createMovement,
+    createUser,
+    getAdminSnapshot,
+    respondMovement,
+    toggleBaseStatus,
+    updateUser
+} from './database/admin.js';
 
 import { updateDisplayName } from './routes/update-display-name.js';
 import { saveDisplayName } from './routes/save-display-name.js';
@@ -557,6 +566,69 @@ app.post('/api/update-display-name', updateDisplayName);
 // ðŸ†• Rota para salvar Display Name direto no MongoDB (bypass Action1 API)
 app.post('/api/save-display-name', saveDisplayName);
 app.use('/api/termos', termosRouter);
+
+app.get('/api/admin/snapshot', async (req, res) => {
+    try {
+        const snapshot = await getAdminSnapshot();
+        res.json({ success: true, data: snapshot });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/admin/bases', async (req, res) => {
+    try {
+        const base = await createBase(req.body || {});
+        res.status(201).json({ success: true, data: base });
+    } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
+
+app.patch('/api/admin/bases/:id/toggle', async (req, res) => {
+    try {
+        const base = await toggleBaseStatus(req.params.id);
+        res.json({ success: true, data: base });
+    } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/admin/users', async (req, res) => {
+    try {
+        const user = await createUser(req.body || {});
+        res.status(201).json({ success: true, data: user });
+    } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
+
+app.patch('/api/admin/users/:id', async (req, res) => {
+    try {
+        const user = await updateUser(req.params.id, req.body || {});
+        res.json({ success: true, data: user });
+    } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/admin/movements', async (req, res) => {
+    try {
+        const movement = await createMovement(req.body || {});
+        res.status(201).json({ success: true, data: movement });
+    } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/admin/movements/:id/respond', async (req, res) => {
+    try {
+        const movement = await respondMovement(req.params.id, req.body || {});
+        res.json({ success: true, data: movement });
+    } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
 
 // Rota para exportar CSV
 // Endpoint CSV usado pela UI e por planilhas externas.

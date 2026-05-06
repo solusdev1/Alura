@@ -1,0 +1,14 @@
+.env
+.env.*
+.env*.local
+.next
+node_modules
+coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# Dados operacionais locais: inventario, seriais, responsaveis, telefones/chips.
+backend/data/*.json
+
+# Scripts administrativos locais nao sao necessarios no runtime da Vercel.
+backend/scripts/
