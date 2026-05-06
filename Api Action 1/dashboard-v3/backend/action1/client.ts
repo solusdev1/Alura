@@ -6,6 +6,8 @@ const ACTION1_BASE_URL = 'https://app.action1.com/api/3.0';
 type EnvMap = Record<string, string>;
 
 let cachedEnvFileValues: EnvMap | null = null;
+let cachedAction1Token: string | null = null;
+let tokenExpiresAt: number = 0;
 
 function stripWrappingQuotes(value: string) {
   const trimmed = value.trim();
@@ -25,7 +27,7 @@ function parseEnvFile(filePath: string): EnvMap {
     const raw = fs.readFileSync(filePath, 'utf-8').replace(/^\uFEFF/, '');
     const values: EnvMap = {};
 
-    for (const line of raw.split(/\r\n/)) {
+    for (const line of raw.split(/\r?\n/)) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#')) continue;
 
@@ -48,9 +50,9 @@ function getEnvFileValues(): EnvMap {
 
   const cwd = process.cwd();
   const candidates = [
-    join(cwd, '.env.local'),
-    join(cwd, '.env'),
-    join(cwd, '..', 'Dashboard-v2.0', '.env')
+    join(cwd, '..', 'Dashboard-v2.0', '.env'), // Menor prioridade (projeto antigo)
+    join(cwd, '.env'),                         // Prioridade média
+    join(cwd, '.env.local')                    // Maior prioridade (sempre vence)
   ];
 
   cachedEnvFileValues = candidates.reduce<EnvMap>((acc, filePath) => {
@@ -70,12 +72,23 @@ function getResolvedEnv(name: string) {
 }
 
 function getAuthPayload() {
-  return {
+  const payload = {
     grant_type: 'client_credentials',
     client_id: getResolvedEnv('ACTION1_CLIENT_ID'),
     client_secret: getResolvedEnv('ACTION1_CLIENT_SECRET'),
     scope: 'api'
   };
+
+  const safeId = payload.client_id ? `${payload.client_id.substring(0, 5)}...` : 'VAZIO';
+  const safeSecretLength = payload.client_secret ? payload.client_secret.length : 0;
+  
+  console.log('--------------------------------------------------');
+  console.log('[DEBUG] Tentando autenticar na Action1...');
+  console.log(`[DEBUG] Client ID (5 primeiros chars): ${safeId}`);
+  console.log(`[DEBUG] Client Secret (tamanho do texto): ${safeSecretLength} caracteres`);
+  console.log('--------------------------------------------------');
+
+  return payload;
 }
 
 class Action1ApiError extends Error {
@@ -143,6 +156,7 @@ async function requestAction1Json(url: string, init: RequestInit, options: { max
         continue;
       }
 
+      console.error(`\n[ERRO API ACTION1] Falha na requisicao para: ${url}\nDetalhes do Erro:`, error);
       throw error;
     }
   }
@@ -151,6 +165,11 @@ async function requestAction1Json(url: string, init: RequestInit, options: { max
 }
 
 export async function authenticateAction1(): Promise<string> {
+  // Reutiliza o token se ainda for valido (com margem de seguranca de 1 minuto)
+  if (cachedAction1Token && Date.now() < tokenExpiresAt - 60000) {
+    return cachedAction1Token;
+  }
+
   const authPayload = getAuthPayload();
 
   if (!authPayload.client_id || !authPayload.client_secret) {
@@ -172,8 +191,14 @@ export async function authenticateAction1(): Promise<string> {
       throw new Error('ACTION1_TOKEN_MISSING');
     }
 
-    return payload.access_token;
+    cachedAction1Token = payload.access_token;
+    // Action1 tokens geralmente expiram em 1 hora (3600s). Fazemos fallback para 50 min.
+    const expiresInMs = payload.expires_in ? (payload.expires_in * 1000) : 50 * 60 * 1000;
+    tokenExpiresAt = Date.now() + expiresInMs;
+
+    return cachedAction1Token;
   } catch (error) {
+    console.error('\n[ERRO AUTENTICACAO] Detalhes da recusa da Action1:', error);
     const message = String((error as { message: string }).message || '');
 
     if (message.includes('Erro API 401')) {
@@ -203,7 +228,7 @@ async function listAllEndpointsByKind(kind: string, organizationId: string, toke
   let hasMore = true;
 
   while (hasMore) {
-    const payload = await action1Get(`/endpoints/${kind}/${organizationId}fields=*&limit=${limit}&from=${from}`, token);
+    const payload = await action1Get(`/endpoints/${kind}/${organizationId}?fields=*&limit=${limit}&from=${from}`, token);
     const items: { id: string }[] = payload.items || [];
     const totalItems: number = payload.total_items || payload.total || 0;
 
