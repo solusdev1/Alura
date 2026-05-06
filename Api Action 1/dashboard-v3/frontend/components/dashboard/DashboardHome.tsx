@@ -20,7 +20,6 @@ export default function DashboardHome({
   const isAdmin = userRole === 'ADMIN';
   const isMaintenance = userRole === 'MANUTENCAO';
   const canSeeAllBases = userRole === 'ADMIN' || userRole === 'GERENTE';
-  const roleLabel = isAdmin ? 'Administrador Global' : userRole === 'GERENTE' ? 'Gerente' : isMaintenance ? 'Manutenção' : 'Gestor de Base';
   
   const roleLabels: Record<string, string> = {
     ADMIN: 'Administrador Global',
